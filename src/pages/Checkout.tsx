@@ -38,23 +38,39 @@ const Checkout = () => {
   useEffect(() => {
     if (!paymentState.wsUrl || !paymentState.orderId) return;
 
-    const ws = new WebSocket(paymentState.wsUrl);
+    // Ensure we use secure WebSocket (wss://) for HTTPS pages
+    let wsUrl = paymentState.wsUrl;
+    if (wsUrl.startsWith('ws://') && window.location.protocol === 'https:') {
+      wsUrl = wsUrl.replace('ws://', 'wss://');
+    }
+
+    let ws: WebSocket | null = null;
     
-    ws.onmessage = async (event) => {
-      const data = JSON.parse(event.data);
-      if (data.status === 'paid' || data.success) {
-        setPaymentState(prev => ({ ...prev, status: 'success' }));
-        await clearCart();
-        toast.success("Payment successful!");
-      }
-    };
+    try {
+      ws = new WebSocket(wsUrl);
+      
+      ws.onmessage = async (event) => {
+        const data = JSON.parse(event.data);
+        if (data.status === 'paid' || data.success) {
+          setPaymentState(prev => ({ ...prev, status: 'success' }));
+          await clearCart();
+          toast.success("Payment successful!");
+        }
+      };
 
-    ws.onerror = () => {
-      // Fall back to polling if WebSocket fails
+      ws.onerror = () => {
+        // Fall back to polling if WebSocket fails
+        startPolling(paymentState.orderId!);
+      };
+    } catch (error) {
+      console.error('WebSocket connection error:', error);
+      // Fall back to polling if WebSocket connection fails
       startPolling(paymentState.orderId!);
-    };
+    }
 
-    return () => ws.close();
+    return () => {
+      if (ws) ws.close();
+    };
   }, [paymentState.wsUrl, paymentState.orderId]);
 
   const startPolling = (orderId: string) => {
