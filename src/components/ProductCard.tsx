@@ -194,6 +194,10 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
           <img 
             src={product.image} 
             alt={product.name}
+            loading="lazy"
+            decoding="async"
+            width={product.image_fit === "custom" && product.image_custom_width ? product.image_custom_width : 300}
+            height={product.image_fit === "custom" && product.image_custom_height ? product.image_custom_height : 300}
             className="transition-transform duration-500 group-hover:scale-110"
             style={{
               objectFit: product.image_fit === "custom" ? "contain" : (product.image_fit as any) || "cover",
