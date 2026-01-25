@@ -52,13 +52,10 @@ export const AddToCartButton = ({
       const funcType = (data?.function_type as CategoryFunction) || 'link';
       setFunctionType(funcType);
 
-      // If account type, fetch available stock
+      // If account type, fetch available stock using secure function
       if (funcType === 'account') {
-        const { count } = await supabase
-          .from("product_accounts")
-          .select("id", { count: 'exact', head: true })
-          .eq("product_id", productId)
-          .eq("is_sold", false);
+        const { data: count } = await supabase
+          .rpc('get_available_account_count', { p_product_id: productId });
         
         setStockCount(count || 0);
       }
@@ -83,11 +80,9 @@ export const AddToCartButton = ({
           filter: `product_id=eq.${productId}`,
         },
         async () => {
-          const { count } = await supabase
-            .from("product_accounts")
-            .select("id", { count: 'exact', head: true })
-            .eq("product_id", productId)
-            .eq("is_sold", false);
+          // Refetch stock using secure function
+          const { data: count } = await supabase
+            .rpc('get_available_account_count', { p_product_id: productId });
           
           setStockCount(count || 0);
         }
