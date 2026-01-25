@@ -568,26 +568,36 @@ const Admin = () => {
                   />
                 </div>
 
-                {/* Price */}
-                <div className="space-y-2">
-                  <Label className="text-foreground">Price (Optional)</Label>
-                  <div className="flex gap-2">
-                    <select
-                      value={currency}
-                      onChange={(e) => setCurrency(e.target.value)}
-                      className="h-10 px-3 rounded-md border border-gold/30 bg-input text-foreground w-20"
-                    >
-                      <option value="$">$</option>
-                      <option value="៛">៛</option>
-                    </select>
-                    <Input 
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      placeholder="e.g., 29.99"
-                      className="bg-input border-gold/30 text-foreground flex-1"
-                    />
-                  </div>
-                </div>
+                {/* Price - Only show for Account/Upload categories */}
+                {(() => {
+                  const selectedCategory = categories.find(c => c.id === categoryIds[0]);
+                  const showPrice = !selectedCategory || selectedCategory.function_type !== 'link';
+                  
+                  if (!showPrice) return null;
+                  
+                  return (
+                    <div className="space-y-2">
+                      <Label className="text-foreground">Price *</Label>
+                      <div className="flex gap-2">
+                        <select
+                          value={currency}
+                          onChange={(e) => setCurrency(e.target.value)}
+                          className="h-10 px-3 rounded-md border border-gold/30 bg-input text-foreground w-20"
+                        >
+                          <option value="$">$</option>
+                          <option value="៛">៛</option>
+                        </select>
+                        <Input 
+                          value={price}
+                          onChange={(e) => setPrice(e.target.value)}
+                          placeholder="e.g., 29.99"
+                          className="bg-input border-gold/30 text-foreground flex-1"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Required for checkout products</p>
+                    </div>
+                  );
+                })()}
 
                 {/* Description */}
                 <div className="space-y-2">
@@ -604,7 +614,7 @@ const Admin = () => {
                 {/* Categories (Multi-select) */}
                 {categories.length > 0 && (
                   <div className="space-y-2">
-                    <Label className="text-foreground">Categories (Optional)</Label>
+                    <Label className="text-foreground">Category *</Label>
                     <div className="flex flex-wrap gap-2 p-3 rounded-md border border-gold/30 bg-input min-h-[60px]">
                       {categories.map((cat) => (
                         <Button
@@ -625,10 +635,36 @@ const Admin = () => {
                           }
                         >
                           {cat.name}
+                          <span className={`ml-1.5 px-1.5 py-0.5 text-[10px] rounded ${
+                            cat.function_type === 'link' ? 'bg-blue-500/20 text-blue-300' :
+                            cat.function_type === 'account' ? 'bg-green-500/20 text-green-300' :
+                            'bg-purple-500/20 text-purple-300'
+                          }`}>
+                            {cat.function_type}
+                          </span>
                         </Button>
                       ))}
                     </div>
-                    <p className="text-xs text-muted-foreground">Click to select multiple categories</p>
+                    {categoryIds.length > 0 && (() => {
+                      const selectedCategory = categories.find(c => c.id === categoryIds[0]);
+                      return selectedCategory && (
+                        <div className={`p-2 rounded text-xs ${
+                          selectedCategory.function_type === 'link' ? 'bg-blue-500/10 text-blue-300 border border-blue-500/20' :
+                          selectedCategory.function_type === 'account' ? 'bg-green-500/10 text-green-300 border border-green-500/20' :
+                          'bg-purple-500/10 text-purple-300 border border-purple-500/20'
+                        }`}>
+                          {selectedCategory.function_type === 'link' && (
+                            <>📎 <strong>Link Category:</strong> Product will show "Order Now" button with external link. No price or cart.</>
+                          )}
+                          {selectedCategory.function_type === 'account' && (
+                            <>🔑 <strong>Account Category:</strong> Product sells account details. Add accounts after saving.</>
+                          )}
+                          {selectedCategory.function_type === 'upload' && (
+                            <>📁 <strong>Upload Category:</strong> Product sells a downloadable file. Upload file after saving.</>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -709,29 +745,39 @@ const Admin = () => {
                   </div>
                 </div>
 
-                {/* Order Now Link */}
-                <div className="space-y-2 border-t border-gold/20 pt-4">
-                  <Label className="text-foreground font-semibold">Order Now Link (Optional)</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      value={orderUrl}
-                      onChange={(e) => setOrderUrl(e.target.value)}
-                      placeholder="https://..."
-                      className="bg-input border-gold/30 text-foreground flex-1"
-                    />
-                    {usedOrderUrls.length > 0 && (
-                      <select
-                        onChange={(e) => e.target.value && setOrderUrl(e.target.value)}
-                        className="h-10 px-2 rounded-md border border-gold/30 bg-input text-foreground text-xs"
-                      >
-                        <option value="">Recent</option>
-                        {usedOrderUrls.map((url, i) => (
-                          <option key={i} value={url || ""}>{url?.slice(0, 30)}...</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                </div>
+                {/* Order Now Link - Only show for Link categories */}
+                {(() => {
+                  const selectedCategory = categories.find(c => c.id === categoryIds[0]);
+                  const showOrderUrl = selectedCategory?.function_type === 'link';
+                  
+                  if (!showOrderUrl) return null;
+                  
+                  return (
+                    <div className="space-y-2 border-t border-gold/20 pt-4">
+                      <Label className="text-foreground font-semibold">Order Now Link *</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          value={orderUrl}
+                          onChange={(e) => setOrderUrl(e.target.value)}
+                          placeholder="https://..."
+                          className="bg-input border-gold/30 text-foreground flex-1"
+                        />
+                        {usedOrderUrls.length > 0 && (
+                          <select
+                            onChange={(e) => e.target.value && setOrderUrl(e.target.value)}
+                            className="h-10 px-2 rounded-md border border-gold/30 bg-input text-foreground text-xs"
+                          >
+                            <option value="">Recent</option>
+                            {usedOrderUrls.map((url, i) => (
+                              <option key={i} value={url || ""}>{url?.slice(0, 30)}...</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">URL will open when user clicks "Order Now"</p>
+                    </div>
+                  );
+                })()}
 
                 {/* Account/File Managers for existing products */}
                 {editingId && categoryIds.length > 0 && (() => {
