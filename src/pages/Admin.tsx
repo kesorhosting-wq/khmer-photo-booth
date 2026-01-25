@@ -613,56 +613,73 @@ const Admin = () => {
                   />
                 </div>
 
-                {/* Categories (Multi-select) */}
+                {/* Category Dropdown */}
                 {categories.length > 0 && (
                   <div className="space-y-2">
                     <Label className="text-foreground">Category *</Label>
-                    <div className="flex flex-wrap gap-2 p-3 rounded-md border border-gold/30 bg-input min-h-[60px]">
+                    <select
+                      value={categoryIds[0] || ""}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setCategoryIds([e.target.value]);
+                        } else {
+                          setCategoryIds([]);
+                        }
+                      }}
+                      className="w-full h-10 px-3 rounded-md border border-gold/30 bg-card text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/50"
+                      style={{ 
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23d4af37' d='M2 4l4 4 4-4'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 12px center'
+                      }}
+                    >
+                      <option value="" className="bg-card text-muted-foreground">-- Select Category --</option>
                       {categories.map((cat) => (
-                        <Button
-                          key={cat.id}
-                          type="button"
-                          size="sm"
-                          variant={categoryIds.includes(cat.id) ? "default" : "outline"}
-                          onClick={() => {
-                            if (categoryIds.includes(cat.id)) {
-                              setCategoryIds(categoryIds.filter(id => id !== cat.id));
-                            } else {
-                              setCategoryIds([...categoryIds, cat.id]);
-                            }
-                          }}
-                          className={categoryIds.includes(cat.id)
-                            ? "bg-gold text-primary-foreground hover:bg-gold-dark"
-                            : "border-gold/30 text-foreground hover:bg-gold/10"
-                          }
+                        <option 
+                          key={cat.id} 
+                          value={cat.id}
+                          className="bg-card text-foreground py-2"
                         >
-                          {cat.name}
-                          <span className={`ml-1.5 px-1.5 py-0.5 text-[10px] rounded ${
-                            cat.function_type === 'link' ? 'bg-blue-500/20 text-blue-300' :
-                            cat.function_type === 'account' ? 'bg-green-500/20 text-green-300' :
-                            'bg-purple-500/20 text-purple-300'
-                          }`}>
-                            {cat.function_type}
-                          </span>
-                        </Button>
+                          {cat.name} ({cat.function_type === 'link' ? '🔗 Link' : cat.function_type === 'account' ? '🔑 Account' : '📁 Upload'})
+                        </option>
                       ))}
-                    </div>
+                    </select>
+                    
+                    {/* Category Info */}
                     {categoryIds.length > 0 && (() => {
                       const selectedCategory = categories.find(c => c.id === categoryIds[0]);
                       return selectedCategory && (
-                        <div className={`p-2 rounded text-xs ${
-                          selectedCategory.function_type === 'link' ? 'bg-blue-500/10 text-blue-300 border border-blue-500/20' :
-                          selectedCategory.function_type === 'account' ? 'bg-green-500/10 text-green-300 border border-green-500/20' :
-                          'bg-purple-500/10 text-purple-300 border border-purple-500/20'
+                        <div className={`p-3 rounded-lg text-sm ${
+                          selectedCategory.function_type === 'link' ? 'bg-blue-500/10 text-blue-300 border border-blue-500/30' :
+                          selectedCategory.function_type === 'account' ? 'bg-green-500/10 text-green-300 border border-green-500/30' :
+                          'bg-purple-500/10 text-purple-300 border border-purple-500/30'
                         }`}>
                           {selectedCategory.function_type === 'link' && (
-                            <>📎 <strong>Link Category:</strong> Product will show "Order Now" button with external link. No price or cart.</>
+                            <div className="flex items-start gap-2">
+                              <span className="text-lg">🔗</span>
+                              <div>
+                                <strong>Link Product</strong>
+                                <p className="text-xs opacity-80 mt-0.5">Shows "Order Now" button that opens external link. No cart or checkout.</p>
+                              </div>
+                            </div>
                           )}
                           {selectedCategory.function_type === 'account' && (
-                            <>🔑 <strong>Account Category:</strong> Product sells account details. Add accounts after saving.</>
+                            <div className="flex items-start gap-2">
+                              <span className="text-lg">🔑</span>
+                              <div>
+                                <strong>Account Product</strong>
+                                <p className="text-xs opacity-80 mt-0.5">Sells account details. Save product first, then add accounts to sell.</p>
+                              </div>
+                            </div>
                           )}
                           {selectedCategory.function_type === 'upload' && (
-                            <>📁 <strong>Upload Category:</strong> Product sells a downloadable file. Upload file after saving.</>
+                            <div className="flex items-start gap-2">
+                              <span className="text-lg">📁</span>
+                              <div>
+                                <strong>Download Product</strong>
+                                <p className="text-xs opacity-80 mt-0.5">Sells a downloadable file. Save product first, then upload file.</p>
+                              </div>
+                            </div>
                           )}
                         </div>
                       );
