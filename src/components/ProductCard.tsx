@@ -3,6 +3,8 @@ import { ProductDetailDialog } from "./ProductDetailDialog";
 import { FavoriteButton } from "./FavoriteButton";
 import { AddToCartButton } from "./AddToCartButton";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+import { Package } from "lucide-react";
 import type { CategoryFunction } from "@/types/shop";
 
 interface Product {
@@ -62,23 +64,38 @@ interface ProductCardProps {
 export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [functionType, setFunctionType] = useState<CategoryFunction | null>(null);
+  const [stockCount, setStockCount] = useState<number | null>(null);
 
-  // Fetch category function type
+  // Fetch category function type and stock count
   useEffect(() => {
-    const fetchFunctionType = async () => {
+    const fetchData = async () => {
       if (!product.category_id) {
         setFunctionType('link');
         return;
       }
+
       const { data } = await supabase
         .from("categories")
         .select("function_type")
         .eq("id", product.category_id)
         .single();
-      setFunctionType((data?.function_type as CategoryFunction) || 'link');
+
+      const funcType = (data?.function_type as CategoryFunction) || 'link';
+      setFunctionType(funcType);
+
+      // Fetch stock count for account type products
+      if (funcType === 'account') {
+        const { count } = await supabase
+          .from("product_accounts")
+          .select("id", { count: 'exact', head: true })
+          .eq("product_id", product.id)
+          .eq("is_sold", false);
+        
+        setStockCount(count || 0);
+      }
     };
-    fetchFunctionType();
-  }, [product.category_id]);
+    fetchData();
+  }, [product.category_id, product.id]);
 
   // Default theme values
   const theme = {
@@ -128,6 +145,10 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
   // Only show price for account and upload types (not link)
   const showPrice = functionType !== 'link' && product.price;
 
+  // Show stock badge for account type products
+  const showStockBadge = functionType === 'account' && stockCount !== null;
+  const isOutOfStock = stockCount === 0;
+
   return (
     <>
       <div 
@@ -155,6 +176,22 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          
+          {/* Stock Badge for account products */}
+          {showStockBadge && (
+            <Badge 
+              className={`absolute top-2 left-2 flex items-center gap-1 ${
+                isOutOfStock 
+                  ? 'bg-destructive text-destructive-foreground' 
+                  : 'bg-gold text-primary-foreground'
+              }`}
+            >
+              <Package className="w-3 h-3" />
+              {isOutOfStock ? 'Sold Out' : `${stockCount} left`}
+            </Badge>
+          )}
+
+          {/* Favorite Button */}
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <FavoriteButton productId={product.id} />
           </div>
