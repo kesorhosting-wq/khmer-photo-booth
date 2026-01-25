@@ -1,5 +1,5 @@
 import { FestivalThemeSwitcher, FestivalTheme, ColorMode } from "./FestivalThemeSwitcher";
-
+import { UserMenu } from "./UserMenu";
 
 interface SiteHeaderProps {
   siteName: string;
@@ -63,17 +63,18 @@ export const SiteHeader = ({ siteName, logo, logoWidth = 80, logoHeight = 80, lo
         </h1>
       </div>
 
-      {/* Festival Theme Switcher */}
-      {onFestivalThemeChange && onColorModeChange && (
-        <div className="absolute top-4 right-4 z-50">
+      {/* User Menu & Festival Theme Switcher */}
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+        <UserMenu />
+        {onFestivalThemeChange && onColorModeChange && (
           <FestivalThemeSwitcher 
             currentTheme={festivalTheme} 
             onThemeChange={onFestivalThemeChange}
             colorMode={colorMode}
             onColorModeChange={onColorModeChange}
           />
-        </div>
-      )}
+        )}
+      </div>
 
     </header>
   );

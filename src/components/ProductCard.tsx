@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ProductDetailDialog } from "./ProductDetailDialog";
+import { FavoriteButton } from "./FavoriteButton";
 
 interface Product {
   id: string;
@@ -140,6 +141,10 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          {/* Favorite Button */}
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <FavoriteButton productId={product.id} />
+          </div>
         </div>
         <div className="text-center space-y-0.5 sm:space-y-1">
           <h3 
