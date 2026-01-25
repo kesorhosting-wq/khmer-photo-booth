@@ -97,6 +97,38 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
     fetchData();
   }, [product.category_id, product.id]);
 
+  // Subscribe to real-time stock updates for account products
+  useEffect(() => {
+    if (functionType !== 'account') return;
+
+    const channel = supabase
+      .channel(`product-stock-${product.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'product_accounts',
+          filter: `product_id=eq.${product.id}`,
+        },
+        async () => {
+          // Refetch stock count when product_accounts change
+          const { count } = await supabase
+            .from("product_accounts")
+            .select("id", { count: 'exact', head: true })
+            .eq("product_id", product.id)
+            .eq("is_sold", false);
+          
+          setStockCount(count || 0);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [functionType, product.id]);
+
   // Default theme values
   const theme = {
     bgColor: cardTheme?.bgColor || "#1a1a2e",
