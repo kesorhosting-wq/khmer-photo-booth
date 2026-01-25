@@ -167,29 +167,21 @@ const Index = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [minLoadingComplete, setMinLoadingComplete] = useState(false);
   const [festivalTheme, setFestivalTheme] = useState<FestivalTheme>('none');
   const [colorMode, setColorMode] = useState<ColorMode>('dark');
-  const [earlyLoadingData, setEarlyLoadingData] = useState<{
-    loadingImageUrl: string | null;
-    bodyBgColor: string;
-  } | null>(null);
 
-  // Apply page title, favicon, and loading screen immediately on mount (before full settings load)
+  // Apply page title and favicon on mount
   useEffect(() => {
     const applyEarlySettings = async () => {
       const { data } = await supabase
         .from("site_settings")
-        .select("page_title, favicon_url, loading_image_url, body_bg_color")
+        .select("page_title, favicon_url")
         .maybeSingle();
       
       if (data) {
-        // Apply page title
         if (data.page_title) {
           document.title = data.page_title;
         }
-        // Apply favicon
         if (data.favicon_url) {
           const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement || document.createElement('link');
           link.type = 'image/x-icon';
@@ -197,23 +189,9 @@ const Index = () => {
           link.href = data.favicon_url;
           document.head.appendChild(link);
         }
-        // Set early loading data for loading screen
-        setEarlyLoadingData({
-          loadingImageUrl: data.loading_image_url,
-          bodyBgColor: data.body_bg_color || "#0d0d0d",
-        });
-      } else {
-        setEarlyLoadingData({ loadingImageUrl: null, bodyBgColor: "#0d0d0d" });
       }
     };
     applyEarlySettings();
-
-    // Minimum loading time of 2 seconds for better UX
-    const timer = setTimeout(() => {
-      setMinLoadingComplete(true);
-    }, 2000);
-
-    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -293,7 +271,6 @@ const Index = () => {
         dialogTelegramIconUrl: (data as any).dialog_telegram_icon_url,
       });
     }
-    setSettingsLoaded(true);
   };
 
   const fetchCategories = async () => {
@@ -365,48 +342,6 @@ const Index = () => {
     ? products.filter(p => p.categoryIds.includes(selectedCategory))
     : products;
 
-  // Show full loading screen while loading - use earlyLoadingData for immediate display
-  const loadingBgColor = earlyLoadingData?.bodyBgColor || settings.bodyBgColor || "#0d0d0d";
-  const loadingImage = earlyLoadingData?.loadingImageUrl || settings.loadingImageUrl;
-
-  // Show loading screen until all conditions are met: settings loaded, data loaded, and minimum time passed
-  const showLoading = !settingsLoaded || !minLoadingComplete || loading;
-
-  // While earlyLoadingData is null (still fetching), show nothing to avoid dark flash
-  if (earlyLoadingData === null) {
-    return null;
-  }
-
-  if (showLoading) {
-    // If we have a loading image, show it
-    if (loadingImage) {
-      return (
-        <div 
-          className="fixed inset-0 z-50 w-screen h-screen"
-          style={{ backgroundColor: loadingBgColor }}
-        >
-          <img 
-            src={loadingImage} 
-            alt="Loading" 
-            className="w-full h-full object-cover object-center"
-            style={{ 
-              minWidth: '100vw', 
-              minHeight: '100vh',
-              maxWidth: '100vw',
-              maxHeight: '100vh'
-            }}
-          />
-        </div>
-      );
-    }
-    // If no loading image, show background color only
-    return (
-      <div 
-        className="fixed inset-0 z-50"
-        style={{ backgroundColor: loadingBgColor }}
-      />
-    );
-  }
 
   // Get festival theme class
   const getThemeClass = () => {
