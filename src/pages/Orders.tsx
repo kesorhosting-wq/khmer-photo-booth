@@ -214,25 +214,28 @@ const Orders = () => {
                       {order.product_account_id && (
                         <Button
                           size="sm"
-                          variant="outline"
                           onClick={() => handleViewAccount(order)}
-                          className="gap-1"
+                          className="gap-1 bg-green-600 hover:bg-green-700 text-white"
                         >
                           <Eye className="h-4 w-4" />
-                          View
+                          View Account
                         </Button>
                       )}
                       {order.product_file_id && (
                         <Button
                           size="sm"
-                          variant="outline"
                           onClick={() => handleDownloadFile(order)}
-                          className="gap-1"
+                          className="gap-1 bg-purple-600 hover:bg-purple-700 text-white"
                         >
                           <Download className="h-4 w-4" />
                           Download
                         </Button>
                       )}
+                    </div>
+                  )}
+                  {order.status === 'pending' && (
+                    <div className="text-xs text-muted-foreground text-right">
+                      Waiting for<br/>payment...
                     </div>
                   )}
                 </div>
@@ -246,36 +249,48 @@ const Orders = () => {
       <Dialog open={!!selectedOrder && !!accountDetails} onOpenChange={() => { setSelectedOrder(null); setAccountDetails(null); }}>
         <DialogContent className="max-w-md bg-card border-gold/30">
           <DialogHeader>
-            <DialogTitle className="gold-text font-display">
-              Account Details
+            <DialogTitle className="gold-text font-display flex items-center gap-2">
+              <span className="text-2xl">🔑</span>
+              Your Account Details
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-4">
-            <p className="text-sm text-muted-foreground">
-              Product: {selectedOrder?.product?.name}
-            </p>
+          <div className="space-y-4 py-4">
+            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+              <p className="text-sm text-green-300">
+                ✓ Payment confirmed for: <strong>{selectedOrder?.product?.name}</strong>
+              </p>
+            </div>
+            
             <div className="space-y-2">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Account Information:</p>
               {accountDetails?.map((detail, index) => (
                 <div 
                   key={index}
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-gold/10"
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-gold/20"
                 >
-                  <span className="text-foreground text-sm break-all pr-2">{detail}</span>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-xs text-gold font-bold">#{index + 1}</span>
+                    <span className="text-foreground text-sm break-all">{detail}</span>
+                  </div>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 flex-shrink-0"
+                    className="h-8 w-8 flex-shrink-0 hover:bg-gold/20"
                     onClick={() => copyToClipboard(detail, index)}
                   >
                     {copiedIndex === index ? (
-                      <Check className="h-4 w-4 text-primary" />
+                      <Check className="h-4 w-4 text-green-500" />
                     ) : (
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-4 w-4 text-gold" />
                     )}
                   </Button>
                 </div>
               ))}
             </div>
+            
+            <p className="text-xs text-muted-foreground text-center pt-2">
+              💡 Click the copy icon to copy each detail
+            </p>
           </div>
         </DialogContent>
       </Dialog>
