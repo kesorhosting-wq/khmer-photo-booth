@@ -24,6 +24,7 @@ import { ProductAccountsManager } from "@/components/ProductAccountsManager";
 import { ProductFileManager } from "@/components/ProductFileManager";
 import { OrderManagement } from "@/components/OrderManagement";
 import { PaymentGatewayConfigDialog } from "@/components/PaymentGatewayConfig";
+import { OrderStatsDashboard } from "@/components/OrderStatsDashboard";
 import khmerMandala from "@/assets/khmer-mandala.jpg";
 import type { CategoryFunction } from "@/types/shop";
 
@@ -401,6 +402,7 @@ const Admin = () => {
             <CategoryEditDialog />
             <ReloadEditDialog />
             <OrderManagement />
+            <OrderStatsDashboard />
             <PaymentGatewayConfigDialog />
             <Dialog open={open} onOpenChange={(isOpen) => { setOpen(isOpen); if (!isOpen) resetForm(); }}>
             <DialogTrigger asChild>
