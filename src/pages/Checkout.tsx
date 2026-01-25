@@ -157,12 +157,9 @@ const Checkout = () => {
     navigate("/orders");
   };
 
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
+  // Redirect if not authenticated (after auth is loaded)
+  if (!authLoading && !user) {
+    return null; // Will redirect via useEffect
   }
 
   return (
