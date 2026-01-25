@@ -446,10 +446,7 @@ const Index = () => {
           <div className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2 w-4 h-4 sm:w-8 sm:h-8 border-b-2 border-l-2 border-gold/50" />
           <div className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-4 h-4 sm:w-8 sm:h-8 border-b-2 border-r-2 border-gold/50" />
           
-          {loading ? (
-            <div className="py-12" />
-          ) : (
-            <ProductGrid 
+          <ProductGrid
               products={filteredProducts} 
               onDeleteProduct={() => {}}
               cardTheme={{
@@ -482,7 +479,6 @@ const Index = () => {
                 telegramIconUrl: settings.dialogTelegramIconUrl,
               }}
             />
-          )}
         </div>
 
       </main>

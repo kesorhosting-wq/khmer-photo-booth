@@ -123,15 +123,15 @@ export const AddToCartButton = ({
     setLoading(false);
   };
 
-  // Still loading category type
+  // Show button immediately with default state while loading
   if (fetchingType) {
     return (
       <Button
-        disabled
-        className={`w-full font-semibold py-1.5 sm:py-2 text-xs sm:text-sm rounded-full ${className}`}
+        className={`w-full font-semibold py-1.5 sm:py-2 text-xs sm:text-sm rounded-full opacity-70 ${className}`}
         style={buttonStyle}
+        disabled
       >
-        <Loader2 className="w-4 h-4 animate-spin" />
+        Add to Cart
       </Button>
     );
   }
