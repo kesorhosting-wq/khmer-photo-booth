@@ -1,0 +1,1 @@
+ALTER TABLE public.site_settings ADD COLUMN site_name_font_size INTEGER DEFAULT 48;
