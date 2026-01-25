@@ -13,6 +13,7 @@ interface Product {
   image_fit?: string | null;
   image_custom_width?: number | null;
   image_custom_height?: number | null;
+  category_id?: string | null;
 }
 
 interface CardTheme {

@@ -19,6 +19,7 @@ interface Product {
   price?: string;
   description?: string;
   categoryIds: string[];
+  category_id?: string | null;
   facebook_url?: string | null;
   tiktok_url?: string | null;
   telegram_url?: string | null;
@@ -339,6 +340,7 @@ const Index = () => {
           price: p.price || undefined,
           description: p.description || undefined,
           categoryIds,
+          category_id: p.category_id,
           facebook_url: p.facebook_url,
           tiktok_url: p.tiktok_url,
           telegram_url: p.telegram_url,
