@@ -1,1 +1,10 @@
 project_id = "tckcfpcxyhqfebienpal"
+
+[functions.khqr-payment]
+verify_jwt = false
+
+[functions.khqr-webhook]
+verify_jwt = false
+
+[functions.download-file]
+verify_jwt = false

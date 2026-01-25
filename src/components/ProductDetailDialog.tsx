@@ -4,8 +4,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { AddToCartButton } from "./AddToCartButton";
 
 interface Product {
   id: string;
@@ -20,6 +20,7 @@ interface Product {
   image_fit?: string | null;
   image_custom_width?: number | null;
   image_custom_height?: number | null;
+  category_id?: string | null;
 }
 
 interface DialogTheme {
@@ -209,19 +210,17 @@ export const ProductDetailDialog = ({
             </div>
           )}
 
-          {/* Order Now Button */}
-          {product.order_url && (
-            <Button
-              onClick={handleOrderNow}
-              className="w-full font-semibold py-3 rounded-full text-lg hover:opacity-90"
-              style={{
-                backgroundColor: theme.buttonBgColor,
-                color: theme.buttonTextColor,
-              }}
-            >
-              Order Now
-            </Button>
-          )}
+          {/* Add to Cart / Order Now Button */}
+          <AddToCartButton
+            productId={product.id}
+            orderUrl={product.order_url}
+            categoryId={product.category_id}
+            buttonStyle={{
+              backgroundColor: theme.buttonBgColor,
+              color: theme.buttonTextColor,
+            }}
+            className="py-3 text-lg"
+          />
         </div>
       </DialogContent>
     </Dialog>

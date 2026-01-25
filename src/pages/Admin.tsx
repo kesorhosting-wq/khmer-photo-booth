@@ -20,7 +20,10 @@ import {
 import { HomeEditDialog } from "@/components/HomeEditDialog";
 import { CategoryEditDialog } from "@/components/CategoryEditDialog";
 import { ReloadEditDialog } from "@/components/ReloadEditDialog";
+import { ProductAccountsManager } from "@/components/ProductAccountsManager";
+import { ProductFileManager } from "@/components/ProductFileManager";
 import khmerMandala from "@/assets/khmer-mandala.jpg";
+import type { CategoryFunction } from "@/types/shop";
 
 interface Product {
   id: string;
@@ -41,6 +44,7 @@ interface Product {
 interface Category {
   id: string;
   name: string;
+  function_type: CategoryFunction;
 }
 
 const Admin = () => {
@@ -141,7 +145,10 @@ const Admin = () => {
       .order("sort_order", { ascending: true });
 
     if (data) {
-      setCategories(data);
+      setCategories(data.map(c => ({
+        ...c,
+        function_type: (c.function_type as CategoryFunction) || 'link'
+      })));
     }
   };
 
@@ -671,6 +678,20 @@ const Admin = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Account/File Managers for existing products */}
+                {editingId && categoryIds.length > 0 && (() => {
+                  const selectedCategory = categories.find(c => c.id === categoryIds[0]);
+                  const functionType = selectedCategory?.function_type;
+                  
+                  if (functionType === 'account') {
+                    return <ProductAccountsManager productId={editingId} />;
+                  }
+                  if (functionType === 'upload') {
+                    return <ProductFileManager productId={editingId} />;
+                  }
+                  return null;
+                })()}
 
                 <div className="flex gap-2">
                   <Button 

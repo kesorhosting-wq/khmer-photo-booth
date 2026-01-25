@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { FolderOpen, Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { FolderOpen, Plus, Trash2, ChevronUp, ChevronDown, Link, User, Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,18 +12,27 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import type { CategoryFunction } from "@/types/shop";
 
 interface Category {
   id: string;
   name: string;
   sort_order: number;
+  function_type: CategoryFunction;
 }
+
+const FUNCTION_OPTIONS: { value: CategoryFunction; label: string; icon: any; description: string }[] = [
+  { value: 'link', label: 'Link', icon: Link, description: 'Opens external order link' },
+  { value: 'account', label: 'Account', icon: User, description: 'Sell account details (1-100 per product)' },
+  { value: 'upload', label: 'Upload', icon: Upload, description: 'Sell downloadable files' },
+];
 
 export const CategoryEditDialog = () => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryFunction, setNewCategoryFunction] = useState<CategoryFunction>('link');
 
   useEffect(() => {
     if (open) {
@@ -39,7 +48,10 @@ export const CategoryEditDialog = () => {
       .order("sort_order", { ascending: true });
 
     if (data) {
-      setCategories(data);
+      setCategories(data.map(c => ({
+        ...c,
+        function_type: (c.function_type as CategoryFunction) || 'link'
+      })));
     }
     setLoading(false);
   };
@@ -58,7 +70,8 @@ export const CategoryEditDialog = () => {
       .from("categories")
       .insert({ 
         name: newCategoryName.trim(),
-        sort_order: maxOrder + 1
+        sort_order: maxOrder + 1,
+        function_type: newCategoryFunction,
       });
 
     if (error) {
@@ -66,14 +79,20 @@ export const CategoryEditDialog = () => {
     } else {
       toast.success("Category added!");
       setNewCategoryName("");
+      setNewCategoryFunction('link');
       fetchCategories();
     }
   };
 
-  const handleUpdateCategory = async (id: string, name: string) => {
+  const handleUpdateCategory = async (id: string, name: string, functionType?: CategoryFunction) => {
+    const updateData: any = { name };
+    if (functionType) {
+      updateData.function_type = functionType;
+    }
+    
     const { error } = await supabase
       .from("categories")
-      .update({ name })
+      .update(updateData)
       .eq("id", id);
 
     if (error) {
@@ -82,6 +101,14 @@ export const CategoryEditDialog = () => {
       toast.success("Category updated!");
     }
   };
+
+  const handleCategoryFunctionChange = (id: string, functionType: CategoryFunction) => {
+    setCategories(prev => 
+      prev.map(c => c.id === id ? { ...c, function_type: functionType } : c)
+    );
+    handleUpdateCategory(id, categories.find(c => c.id === id)?.name || '', functionType);
+  };
+
 
   const handleDeleteCategory = async (id: string) => {
     const { error } = await supabase
@@ -147,23 +174,52 @@ export const CategoryEditDialog = () => {
         ) : (
           <div className="space-y-5 py-4">
             {/* Add New Category */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label className="text-foreground">Add New Category</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="Category name"
-                  className="bg-input border-gold/30 text-foreground flex-1"
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
-                />
-                <Button
-                  onClick={handleAddCategory}
-                  className="bg-gold text-primary-foreground hover:bg-gold-dark"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
+              <Input
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Category name"
+                className="bg-input border-gold/30 text-foreground"
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+              />
+              
+              {/* Function Type Selection */}
+              <div className="space-y-2">
+                <Label className="text-muted-foreground text-sm">Category Function</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {FUNCTION_OPTIONS.map((option) => {
+                    const Icon = option.icon;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setNewCategoryFunction(option.value)}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${
+                          newCategoryFunction === option.value
+                            ? 'border-gold bg-gold/10 text-gold'
+                            : 'border-gold/20 text-muted-foreground hover:border-gold/40'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="text-xs font-medium">{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {FUNCTION_OPTIONS.find(o => o.value === newCategoryFunction)?.description}
+                </p>
               </div>
+
+              <Button
+                onClick={handleAddCategory}
+                disabled={!newCategoryName.trim()}
+                className="w-full bg-gold text-primary-foreground hover:bg-gold-dark"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Category
+              </Button>
             </div>
 
             {/* Existing Categories */}
@@ -206,6 +262,30 @@ export const CategoryEditDialog = () => {
                         onBlur={() => handleUpdateCategory(category.id, category.name)}
                         className="bg-transparent border-none text-foreground flex-1 h-8"
                       />
+                      
+                      {/* Function Type Indicator */}
+                      <div className="flex gap-1">
+                        {FUNCTION_OPTIONS.map((option) => {
+                          const Icon = option.icon;
+                          const isActive = category.function_type === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => handleCategoryFunctionChange(category.id, option.value)}
+                              className={`p-1.5 rounded transition-all ${
+                                isActive
+                                  ? 'bg-gold/20 text-gold'
+                                  : 'text-muted-foreground/50 hover:text-muted-foreground'
+                              }`}
+                              title={option.description}
+                            >
+                              <Icon className="w-3.5 h-3.5" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                      
                       <Button
                         variant="ghost"
                         size="icon"

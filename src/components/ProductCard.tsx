@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
 import { ProductDetailDialog } from "./ProductDetailDialog";
 import { FavoriteButton } from "./FavoriteButton";
+import { AddToCartButton } from "./AddToCartButton";
 
 interface Product {
   id: string;
@@ -16,6 +16,7 @@ interface Product {
   image_fit?: string | null;
   image_custom_width?: number | null;
   image_custom_height?: number | null;
+  category_id?: string | null;
 }
 
 interface CardTheme {
@@ -164,19 +165,18 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
           )}
         </div>
         
-        {/* Order Now Button - only show if order_url exists */}
-        {product.order_url && (
-          <Button
-            onClick={handleOrderNow}
-            className="w-full mt-2 sm:mt-3 font-semibold py-1.5 sm:py-2 text-xs sm:text-sm rounded-full hover:opacity-90"
-            style={{
+        {/* Add to Cart / Order Now Button */}
+        <div className="mt-2 sm:mt-3">
+          <AddToCartButton
+            productId={product.id}
+            orderUrl={product.order_url}
+            categoryId={product.category_id}
+            buttonStyle={{
               backgroundColor: theme.buttonBgColor,
               color: theme.buttonTextColor,
             }}
-          >
-            Order Now
-          </Button>
-        )}
+          />
+        </div>
       </div>
 
       <ProductDetailDialog
