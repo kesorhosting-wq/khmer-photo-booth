@@ -189,18 +189,7 @@ export const PaymentGatewayConfigDialog = () => {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Bakong Account ID</Label>
-                <Input
-                  value={bakongAccount}
-                  onChange={(e) => setBakongAccount(e.target.value)}
-                  placeholder="your_bakong_username"
-                  className="bg-input border-gold/30 text-foreground"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Your Bakong account username to receive payments
-                </p>
-              </div>
+              {/* Removed Bakong Account - it's configured on the Node.js server side */}
 
               <div className="space-y-2">
                 <Label className="text-muted-foreground text-sm">Webhook Secret (Optional)</Label>

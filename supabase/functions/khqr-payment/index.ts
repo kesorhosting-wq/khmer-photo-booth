@@ -172,13 +172,22 @@ Deno.serve(async (req) => {
         const callbackUrl = `${supabaseUrl}/functions/v1/khqr-webhook/${primaryOrderId}`;
         
         try {
+          // Get user profile for display name
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('user_id', user.id)
+            .single();
+          
+          const customerName = profile?.display_name || user.email?.split('@')[0] || 'Customer';
+          
           // Build request payload matching iKhode API format
           const roundedAmount = Math.round(amount * 100) / 100;
           const requestPayload: Record<string, unknown> = {
             amount: roundedAmount,
             transactionId,
             email: user.email || 'customer@store.com',
-            username: gateway.config.bakong_account || 'Customer',
+            username: customerName,
             gameName: '',
             callbackUrl,
             secret: gateway.config.webhook_secret || '',
