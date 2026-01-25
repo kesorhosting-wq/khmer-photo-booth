@@ -142,6 +142,10 @@ export const ProductDetailDialog = ({
             <img
               src={product.image}
               alt={product.name}
+              loading="lazy"
+              decoding="async"
+              width={400}
+              height={400}
               style={{
                 objectFit: product.image_fit === "custom" ? "contain" : (product.image_fit as any) || "cover",
                 width: product.image_fit === "custom" && product.image_custom_width ? `${product.image_custom_width}px` : "100%",
