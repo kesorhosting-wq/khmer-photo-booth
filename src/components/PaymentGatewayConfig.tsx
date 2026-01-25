@@ -217,6 +217,17 @@ export const PaymentGatewayConfigDialog = () => {
               </div>
             </div>
 
+            {/* Webhook URL Display */}
+            <div className="bg-muted/50 border border-gold/20 rounded-lg p-3">
+              <Label className="text-muted-foreground text-xs">Your Webhook URL:</Label>
+              <code className="block mt-1 text-xs text-gold bg-background p-2 rounded break-all">
+                {import.meta.env.VITE_SUPABASE_URL}/functions/v1/khqr-webhook/{'{order_id}'}
+              </code>
+              <p className="text-xs text-muted-foreground mt-1">
+                Configure this in your Node.js API as the callbackUrl pattern
+              </p>
+            </div>
+
             {/* Info Box */}
             <div className="bg-gold/10 border border-gold/30 rounded-lg p-4">
               <h4 className="text-gold font-semibold text-sm mb-2">How it works:</h4>
