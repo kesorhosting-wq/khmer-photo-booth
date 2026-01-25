@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { 
-  Plus, LogOut, Trash2, ImagePlus, Home, Edit, Save, X, Upload 
+  Plus, LogOut, Trash2, ImagePlus, Home, Edit, Save, X, Upload, Copy 
 } from "lucide-react";
 import {
   Dialog,
@@ -313,6 +313,54 @@ const Admin = () => {
     } else {
       toast.success("Product deleted");
       fetchProducts();
+    }
+  };
+
+  const handleClone = async (product: Product) => {
+    try {
+      // Clone the product with a new name
+      const { data: newProduct, error } = await supabase
+        .from("products")
+        .insert({
+          name: `${product.name} (Copy)`,
+          image_url: product.image_url,
+          price: product.price,
+          description: product.description,
+          category_id: product.category_id,
+          facebook_url: product.facebook_url,
+          tiktok_url: product.tiktok_url,
+          telegram_url: product.telegram_url,
+          order_url: product.order_url,
+          image_fit: product.image_fit,
+          image_custom_width: product.image_custom_width,
+          image_custom_height: product.image_custom_height,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Clone product categories
+      if (newProduct) {
+        const { data: productCats } = await supabase
+          .from("product_categories")
+          .select("category_id")
+          .eq("product_id", product.id);
+
+        if (productCats && productCats.length > 0) {
+          await supabase.from("product_categories").insert(
+            productCats.map(pc => ({ 
+              product_id: newProduct.id, 
+              category_id: pc.category_id 
+            }))
+          );
+        }
+      }
+
+      toast.success("Product cloned! Edit the copy to customize it.");
+      fetchProducts();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to clone product");
     }
   };
 
@@ -743,13 +791,23 @@ const Admin = () => {
                       size="icon"
                       onClick={() => handleEdit(product)}
                       className="bg-gold text-primary-foreground hover:bg-gold-dark"
+                      title="Edit"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
                       size="icon"
+                      onClick={() => handleClone(product)}
+                      className="bg-gold/80 text-primary-foreground hover:bg-gold"
+                      title="Clone"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
                       variant="destructive"
                       onClick={() => handleDelete(product.id)}
+                      title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

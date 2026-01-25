@@ -68,6 +68,37 @@ export const AddToCartButton = ({
     fetchCategoryFunction();
   }, [categoryId, productId]);
 
+  // Subscribe to real-time stock updates
+  useEffect(() => {
+    if (functionType !== 'account') return;
+
+    const channel = supabase
+      .channel(`cart-stock-${productId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'product_accounts',
+          filter: `product_id=eq.${productId}`,
+        },
+        async () => {
+          const { count } = await supabase
+            .from("product_accounts")
+            .select("id", { count: 'exact', head: true })
+            .eq("product_id", productId)
+            .eq("is_sold", false);
+          
+          setStockCount(count || 0);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [functionType, productId]);
+
   const isInCart = items.some(i => i.product_id === productId);
 
   const handleClick = async (e: React.MouseEvent) => {
