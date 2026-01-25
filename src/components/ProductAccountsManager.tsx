@@ -1,32 +1,29 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Trash2, Package, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Package, Save, X, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ProductAccount } from "@/types/shop";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 
 interface ProductAccountsManagerProps {
   productId: string;
 }
 
 const MAX_ACCOUNTS = 100;
-const MAX_LINES_PER_ACCOUNT = 10;
-const MIN_LINES_PER_ACCOUNT = 1;
+const MAX_FIELDS = 10;
+const MIN_FIELDS = 1;
 
 export const ProductAccountsManager = ({ productId }: ProductAccountsManagerProps) => {
   const [accounts, setAccounts] = useState<ProductAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newAccountDetails, setNewAccountDetails] = useState("");
-  const [bulkMode, setBulkMode] = useState(false);
-  const [bulkInput, setBulkInput] = useState("");
+  const [saving, setSaving] = useState(false);
+  
+  // New account form state
+  const [isAdding, setIsAdding] = useState(false);
+  const [newFields, setNewFields] = useState<string[]>(['', '']);
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchAccounts();
@@ -38,6 +35,7 @@ export const ProductAccountsManager = ({ productId }: ProductAccountsManagerProp
       .from("product_accounts")
       .select("*")
       .eq("product_id", productId)
+      .eq("is_sold", false) // Only show unsold accounts
       .order("created_at", { ascending: true });
 
     if (data) {
@@ -46,75 +44,63 @@ export const ProductAccountsManager = ({ productId }: ProductAccountsManagerProp
     setLoading(false);
   };
 
-  const handleAddAccount = async () => {
-    if (accounts.length >= MAX_ACCOUNTS) {
-      toast.error(`Maximum ${MAX_ACCOUNTS} accounts allowed per product`);
+  // Add a new field to the form
+  const addField = () => {
+    if (newFields.length < MAX_FIELDS) {
+      setNewFields([...newFields, '']);
+    }
+  };
+
+  // Remove a field from the form
+  const removeField = (index: number) => {
+    if (newFields.length > MIN_FIELDS) {
+      setNewFields(newFields.filter((_, i) => i !== index));
+    }
+  };
+
+  // Update field value
+  const updateField = (index: number, value: string) => {
+    const updated = [...newFields];
+    updated[index] = value;
+    setNewFields(updated);
+  };
+
+  // Save the new account
+  const handleSaveAccount = async () => {
+    const filledFields = newFields.filter(f => f.trim());
+    
+    if (filledFields.length < MIN_FIELDS) {
+      toast.error(`Please fill at least ${MIN_FIELDS} field`);
       return;
     }
 
-    const lines = newAccountDetails.trim().split('\n').filter(line => line.trim());
-    
-    if (lines.length < MIN_LINES_PER_ACCOUNT || lines.length > MAX_LINES_PER_ACCOUNT) {
-      toast.error(`Please enter ${MIN_LINES_PER_ACCOUNT}-${MAX_LINES_PER_ACCOUNT} lines of account details`);
+    if (accounts.length >= MAX_ACCOUNTS) {
+      toast.error(`Maximum ${MAX_ACCOUNTS} accounts allowed`);
       return;
     }
+
+    setSaving(true);
 
     const { error } = await supabase
       .from("product_accounts")
       .insert({
         product_id: productId,
-        account_details: lines,
+        account_details: filledFields,
       });
 
     if (error) {
       toast.error("Failed to add account");
     } else {
       toast.success("Account added!");
-      setNewAccountDetails("");
+      setNewFields(['', '']);
+      setIsAdding(false);
       fetchAccounts();
     }
+    
+    setSaving(false);
   };
 
-  const handleBulkAdd = async () => {
-    // Parse bulk input - accounts separated by double newline or "---"
-    const accountBlocks = bulkInput
-      .split(/\n\s*\n|\n---\n/)
-      .map(block => block.trim())
-      .filter(block => block.length > 0);
-
-    if (accountBlocks.length === 0) {
-      toast.error("No accounts found in input");
-      return;
-    }
-
-    const remainingSlots = MAX_ACCOUNTS - accounts.length;
-    if (accountBlocks.length > remainingSlots) {
-      toast.error(`Can only add ${remainingSlots} more accounts (max ${MAX_ACCOUNTS})`);
-      return;
-    }
-
-    const accountsToAdd = accountBlocks.map(block => {
-      const lines = block.split('\n').filter(line => line.trim()).slice(0, MAX_LINES_PER_ACCOUNT);
-      return {
-        product_id: productId,
-        account_details: lines,
-      };
-    });
-
-    const { error } = await supabase
-      .from("product_accounts")
-      .insert(accountsToAdd);
-
-    if (error) {
-      toast.error("Failed to add accounts");
-    } else {
-      toast.success(`${accountsToAdd.length} accounts added!`);
-      setBulkInput("");
-      setBulkMode(false);
-      fetchAccounts();
-    }
-  };
-
+  // Delete an account
   const handleDeleteAccount = async (accountId: string) => {
     const { error } = await supabase
       .from("product_accounts")
@@ -129,167 +115,200 @@ export const ProductAccountsManager = ({ productId }: ProductAccountsManagerProp
     }
   };
 
-  const availableCount = accounts.filter(a => !a.is_sold).length;
-  const soldCount = accounts.filter(a => a.is_sold).length;
-  const totalCount = accounts.length;
+  // Toggle account expand/collapse
+  const toggleExpand = (accountId: string) => {
+    const newExpanded = new Set(expandedAccounts);
+    if (newExpanded.has(accountId)) {
+      newExpanded.delete(accountId);
+    } else {
+      newExpanded.add(accountId);
+    }
+    setExpandedAccounts(newExpanded);
+  };
+
+  const availableCount = accounts.length;
 
   return (
     <div className="space-y-4 border-t border-gold/20 pt-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <Label className="text-foreground font-semibold flex items-center gap-2">
           <Package className="w-4 h-4" />
-          Account Stock Management
+          Account Stock
         </Label>
-        <div className="text-xs text-muted-foreground">
-          {availableCount} available / {soldCount} sold / {totalCount} total (max {MAX_ACCOUNTS})
+        <div className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-300">
+          {availableCount} available (max {MAX_ACCOUNTS})
         </div>
       </div>
 
-      {/* Warning if near limit */}
-      {totalCount >= MAX_ACCOUNTS * 0.9 && (
-        <div className="flex items-center gap-2 p-2 bg-gold/10 border border-gold/30 rounded-lg text-sm">
-          <AlertCircle className="w-4 h-4 text-gold" />
-          <span className="text-foreground">
-            {totalCount >= MAX_ACCOUNTS 
-              ? "Maximum account limit reached" 
-              : `Only ${MAX_ACCOUNTS - totalCount} slots remaining`}
-          </span>
-        </div>
-      )}
-
-      {/* Toggle between single and bulk mode */}
-      <div className="flex gap-2">
-        <Button
-          variant={!bulkMode ? "default" : "outline"}
-          size="sm"
-          onClick={() => setBulkMode(false)}
-          className={!bulkMode ? "bg-gold text-primary-foreground" : "border-gold/30"}
-        >
-          Single Add
-        </Button>
-        <Button
-          variant={bulkMode ? "default" : "outline"}
-          size="sm"
-          onClick={() => setBulkMode(true)}
-          className={bulkMode ? "bg-gold text-primary-foreground" : "border-gold/30"}
-        >
-          Bulk Add
-        </Button>
-      </div>
-
-      {/* Single Account Add */}
-      {!bulkMode && (
-        <div className="space-y-2">
-          <Label className="text-muted-foreground text-sm">
-            Add Account ({MIN_LINES_PER_ACCOUNT}-{MAX_LINES_PER_ACCOUNT} lines per account)
-          </Label>
-          <Textarea
-            value={newAccountDetails}
-            onChange={(e) => setNewAccountDetails(e.target.value)}
-            placeholder={`Enter account details (one item per line)\nExample:\nUsername: user123\nPassword: pass456\nEmail: user@example.com\nServer: US-1\nLevel: 50`}
-            className="bg-input border-gold/30 text-foreground min-h-[140px]"
-            rows={6}
-          />
-          <Button
-            onClick={handleAddAccount}
-            disabled={!newAccountDetails.trim() || totalCount >= MAX_ACCOUNTS}
-            size="sm"
-            className="bg-gold text-primary-foreground hover:bg-gold-dark"
-          >
-            <Plus className="w-4 h-4 mr-1" />
-            Add Account
-          </Button>
-        </div>
-      )}
-
-      {/* Bulk Add */}
-      {bulkMode && (
-        <div className="space-y-2">
-          <Label className="text-muted-foreground text-sm">
-            Bulk Add Accounts (separate each account with blank line or ---)
-          </Label>
-          <Textarea
-            value={bulkInput}
-            onChange={(e) => setBulkInput(e.target.value)}
-            placeholder={`Account 1:\nUsername: user1\nPassword: pass1\n\nAccount 2:\nUsername: user2\nPassword: pass2\n\n---\n\nAccount 3:\nUsername: user3\nPassword: pass3`}
-            className="bg-input border-gold/30 text-foreground min-h-[200px]"
-            rows={10}
-          />
-          <Button
-            onClick={handleBulkAdd}
-            disabled={!bulkInput.trim() || totalCount >= MAX_ACCOUNTS}
-            size="sm"
-            className="bg-gold text-primary-foreground hover:bg-gold-dark"
-          >
-            <Plus className="w-4 h-4 mr-1" />
-            Add All Accounts
-          </Button>
-        </div>
-      )}
-
-      {/* Existing Accounts */}
+      {/* Existing Accounts List */}
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading accounts...</p>
       ) : accounts.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4 text-center border border-dashed border-gold/20 rounded-lg">
-          No accounts added yet. Add accounts above for customers to purchase.
-        </p>
+        <div className="text-center py-6 border border-dashed border-gold/30 rounded-lg">
+          <Package className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">No accounts added yet</p>
+          <p className="text-xs text-muted-foreground">Click "Add Account" below to add accounts for sale</p>
+        </div>
       ) : (
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="accounts" className="border-gold/20">
-            <AccordionTrigger className="text-foreground hover:no-underline">
-              View All Accounts ({accounts.length})
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {accounts.map((account, index) => (
-                  <div
-                    key={account.id}
-                    className={`flex items-start gap-2 p-3 rounded-lg border ${
-                      account.is_sold 
-                        ? 'bg-muted/30 border-muted opacity-60' 
-                        : 'bg-input/50 border-gold/20'
-                    }`}
+        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+          {accounts.map((account, index) => (
+            <div
+              key={account.id}
+              className="border border-gold/20 rounded-lg bg-card overflow-hidden"
+            >
+              {/* Account Header */}
+              <div 
+                className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                onClick={() => toggleExpand(account.id)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-gold bg-gold/20 px-2 py-0.5 rounded">
+                    #{index + 1}
+                  </span>
+                  <span className="text-sm text-foreground">
+                    {account.account_details[0]?.substring(0, 30)}
+                    {(account.account_details[0]?.length || 0) > 30 ? '...' : ''}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ({account.account_details.length} fields)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteAccount(account.id);
+                    }}
+                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          #{index + 1}
-                        </span>
-                        {account.is_sold && (
-                          <span className="text-xs px-2 py-0.5 rounded bg-destructive/20 text-destructive">
-                            Sold
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-foreground space-y-0.5">
-                        {account.account_details.slice(0, 3).map((detail, i) => (
-                          <p key={i} className="truncate">{detail}</p>
-                        ))}
-                        {account.account_details.length > 3 && (
-                          <p className="text-muted-foreground">
-                            +{account.account_details.length - 3} more lines
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {!account.is_sold && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteAccount(account.id)}
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                  {expandedAccounts.has(account.id) ? (
+                    <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+
+              {/* Expanded Details */}
+              {expandedAccounts.has(account.id) && (
+                <div className="px-3 pb-3 pt-0 border-t border-gold/10">
+                  <div className="space-y-1 mt-2">
+                    {account.account_details.map((detail, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground w-6">#{i + 1}</span>
+                        <span className="text-sm text-foreground bg-muted/30 px-2 py-1 rounded flex-1">
+                          {detail}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       )}
+
+      {/* Add Account Section */}
+      {isAdding ? (
+        <div className="border border-gold/30 rounded-lg p-4 bg-muted/20 space-y-4">
+          <div className="flex items-center justify-between">
+            <Label className="text-foreground font-medium">
+              New Account #{accounts.length + 1}
+            </Label>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setIsAdding(false);
+                setNewFields(['', '']);
+              }}
+              className="h-7 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Field Inputs */}
+          <div className="space-y-2">
+            {newFields.map((field, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-12 text-right">
+                  Field {index + 1}:
+                </span>
+                <Input
+                  value={field}
+                  onChange={(e) => updateField(index, e.target.value)}
+                  placeholder={
+                    index === 0 ? "e.g., email@example.com" :
+                    index === 1 ? "e.g., password123" :
+                    `Enter detail ${index + 1}`
+                  }
+                  className="flex-1 bg-input border-gold/30 text-foreground h-9"
+                />
+                {newFields.length > MIN_FIELDS && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeField(index)}
+                    className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Add Field Button */}
+          {newFields.length < MAX_FIELDS && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={addField}
+              className="text-gold hover:text-gold-dark w-full border border-dashed border-gold/30"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Add Field ({newFields.length}/{MAX_FIELDS})
+            </Button>
+          )}
+
+          {/* Save Button */}
+          <Button
+            onClick={handleSaveAccount}
+            disabled={saving || newFields.filter(f => f.trim()).length < MIN_FIELDS}
+            className="w-full bg-gold text-primary-foreground hover:bg-gold-dark"
+          >
+            {saving ? (
+              "Saving..."
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Save Account
+              </>
+            )}
+          </Button>
+        </div>
+      ) : (
+        <Button
+          onClick={() => setIsAdding(true)}
+          disabled={accounts.length >= MAX_ACCOUNTS}
+          className="w-full bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Account
+        </Button>
+      )}
+
+      {/* Info */}
+      <p className="text-xs text-muted-foreground text-center">
+        Each account can have 1-10 detail fields. Sold accounts are automatically removed.
+      </p>
     </div>
   );
 };
