@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,6 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import { X } from "lucide-react";
 import { AddToCartButton } from "./AddToCartButton";
+import { supabase } from "@/integrations/supabase/client";
+import type { CategoryFunction } from "@/types/shop";
 
 interface Product {
   id: string;
@@ -54,6 +57,26 @@ export const ProductDetailDialog = ({
   onOpenChange,
   dialogTheme,
 }: ProductDetailDialogProps) => {
+  const [functionType, setFunctionType] = useState<CategoryFunction | null>(null);
+
+  useEffect(() => {
+    const fetchFunctionType = async () => {
+      if (!product?.category_id) {
+        setFunctionType('link');
+        return;
+      }
+      const { data } = await supabase
+        .from("categories")
+        .select("function_type")
+        .eq("id", product.category_id)
+        .single();
+      setFunctionType((data?.function_type as CategoryFunction) || 'link');
+    };
+    if (open && product) {
+      fetchFunctionType();
+    }
+  }, [product?.category_id, open, product]);
+
   if (!product) return null;
 
   const handleSocialClick = (url: string | null | undefined) => {
@@ -62,16 +85,11 @@ export const ProductDetailDialog = ({
     }
   };
 
-  const handleOrderNow = () => {
-    if (product.order_url) {
-      window.open(product.order_url, "_blank");
-    }
-  };
-
-  // Check if any social links exist
   const hasSocialLinks = product.facebook_url || product.tiktok_url || product.telegram_url;
 
-  // Default theme values
+  // Only show price for account and upload types
+  const showPrice = functionType !== 'link' && product.price;
+
   const theme = {
     bgColor: dialogTheme?.bgColor || "#1a1a2e",
     bgImageUrl: dialogTheme?.bgImageUrl,
@@ -102,7 +120,6 @@ export const ProductDetailDialog = ({
           borderColor: theme.borderColor,
         }}
       >
-        {/* Custom Close Button */}
         <button
           onClick={() => onOpenChange(false)}
           className="absolute right-3 top-3 z-10 rounded-full p-1 hover:opacity-80 transition-opacity"
@@ -121,7 +138,6 @@ export const ProductDetailDialog = ({
         </DialogHeader>
         
         <div className="space-y-4 px-6 pb-6">
-          {/* Product Image */}
           <div className="relative overflow-hidden rounded-lg aspect-square flex items-center justify-center bg-muted/20">
             <img
               src={product.image}
@@ -134,8 +150,7 @@ export const ProductDetailDialog = ({
             />
           </div>
 
-          {/* Price */}
-          {product.price && (
+          {showPrice && (
             <p 
               className="font-bold text-2xl text-center"
               style={{ color: theme.priceColor }}
@@ -144,7 +159,6 @@ export const ProductDetailDialog = ({
             </p>
           )}
 
-          {/* Description */}
           {product.description && (
             <p 
               className="text-sm text-center"
@@ -154,7 +168,6 @@ export const ProductDetailDialog = ({
             </p>
           )}
 
-          {/* Social Media Icons */}
           {hasSocialLinks && (
             <div className="flex justify-center gap-4 pt-2">
               {product.facebook_url && (
@@ -210,7 +223,6 @@ export const ProductDetailDialog = ({
             </div>
           )}
 
-          {/* Add to Cart / Order Now Button */}
           <AddToCartButton
             productId={product.id}
             orderUrl={product.order_url}

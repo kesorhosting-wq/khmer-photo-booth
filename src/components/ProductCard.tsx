@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { ProductDetailDialog } from "./ProductDetailDialog";
 import { FavoriteButton } from "./FavoriteButton";
 import { AddToCartButton } from "./AddToCartButton";
+import { supabase } from "@/integrations/supabase/client";
+import type { CategoryFunction } from "@/types/shop";
 
 interface Product {
   id: string;
@@ -59,13 +61,24 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [functionType, setFunctionType] = useState<CategoryFunction | null>(null);
 
-  const handleOrderNow = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (product.order_url) {
-      window.open(product.order_url, "_blank");
-    }
-  };
+  // Fetch category function type
+  useEffect(() => {
+    const fetchFunctionType = async () => {
+      if (!product.category_id) {
+        setFunctionType('link');
+        return;
+      }
+      const { data } = await supabase
+        .from("categories")
+        .select("function_type")
+        .eq("id", product.category_id)
+        .single();
+      setFunctionType((data?.function_type as CategoryFunction) || 'link');
+    };
+    fetchFunctionType();
+  }, [product.category_id]);
 
   // Default theme values
   const theme = {
@@ -86,9 +99,9 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
   const [shineIntensity, setShineIntensity] = useState(0.3);
 
   useEffect(() => {
-    if (theme.shineSpeed <= 0) return; // No animation if speed is 0
+    if (theme.shineSpeed <= 0) return;
     
-    const duration = theme.shineSpeed * 1000; // Convert to milliseconds
+    const duration = theme.shineSpeed * 1000;
     let startTime: number;
     let animationId: number;
 
@@ -96,24 +109,24 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
       const progress = (elapsed % duration) / duration;
-      
-      // Sine wave for smooth pulsing (0.3 to 0.6 opacity range)
       const intensity = 0.3 + Math.sin(progress * Math.PI * 2) * 0.15;
       setShineIntensity(intensity);
-      
       animationId = requestAnimationFrame(animate);
     };
 
     animationId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationId);
   }, [theme.shineSpeed]);
-  // Convert hex to rgba for dynamic opacity
+
   const hexToRgba = (hex: string, alpha: number) => {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
+
+  // Only show price for account and upload types (not link)
+  const showPrice = functionType !== 'link' && product.price;
 
   return (
     <>
@@ -142,7 +155,6 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          {/* Favorite Button */}
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <FavoriteButton productId={product.id} />
           </div>
@@ -154,7 +166,7 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
           >
             {product.name}
           </h3>
-          {product.price && (
+          {showPrice && (
             <div 
               className="text-base sm:text-xl relative flex items-center justify-center px-1 sm:px-2"
               style={{ color: theme.priceColor }}
