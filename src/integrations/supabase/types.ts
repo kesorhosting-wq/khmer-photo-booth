@@ -14,9 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      cart_items: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
+          function_type: Database["public"]["Enums"]["category_function"]
           id: string
           name: string
           sort_order: number | null
@@ -24,6 +57,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          function_type?: Database["public"]["Enums"]["category_function"]
           id?: string
           name: string
           sort_order?: number | null
@@ -31,6 +65,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          function_type?: Database["public"]["Enums"]["category_function"]
           id?: string
           name?: string
           sort_order?: number | null
@@ -67,6 +102,141 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          product_account_id: string | null
+          product_file_id: string | null
+          product_id: string
+          status: string
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          product_account_id?: string | null
+          product_file_id?: string | null
+          product_id: string
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          product_account_id?: string | null
+          product_file_id?: string | null
+          product_id?: string
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_product_account_id_fkey"
+            columns: ["product_account_id"]
+            isOneToOne: false
+            referencedRelation: "product_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_file_id_fkey"
+            columns: ["product_file_id"]
+            isOneToOne: false
+            referencedRelation: "product_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_gateways: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      product_accounts: {
+        Row: {
+          account_details: string[]
+          created_at: string
+          id: string
+          is_sold: boolean
+          product_id: string
+          sold_at: string | null
+          sold_to_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_details?: string[]
+          created_at?: string
+          id?: string
+          is_sold?: boolean
+          product_id: string
+          sold_at?: string | null
+          sold_to_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_details?: string[]
+          created_at?: string
+          id?: string
+          is_sold?: boolean
+          product_id?: string
+          sold_at?: string | null
+          sold_to_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_accounts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_categories: {
         Row: {
           category_id: string
@@ -96,6 +266,41 @@ export type Database = {
           },
           {
             foreignKeyName: "product_categories_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_files_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
@@ -429,6 +634,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      category_function: "link" | "account" | "upload"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -557,6 +763,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      category_function: ["link", "account", "upload"],
     },
   },
 } as const
