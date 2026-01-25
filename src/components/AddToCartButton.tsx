@@ -31,11 +31,15 @@ export const AddToCartButton = ({
   const [loading, setLoading] = useState(false);
   const [functionType, setFunctionType] = useState<CategoryFunction | null>(null);
   const [stockCount, setStockCount] = useState<number | null>(null);
+  const [fetchingType, setFetchingType] = useState(true);
 
   useEffect(() => {
     const fetchCategoryFunction = async () => {
+      setFetchingType(true);
       if (!categoryId) {
+        // No category = link type (just external link)
         setFunctionType('link');
+        setFetchingType(false);
         return;
       }
 
@@ -58,6 +62,7 @@ export const AddToCartButton = ({
         
         setStockCount(count || 0);
       }
+      setFetchingType(false);
     };
 
     fetchCategoryFunction();
@@ -68,11 +73,15 @@ export const AddToCartButton = ({
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    if (functionType === 'link' && orderUrl) {
-      window.open(orderUrl, "_blank");
+    // For link type, just open the external URL
+    if (functionType === 'link') {
+      if (orderUrl) {
+        window.open(orderUrl, "_blank");
+      }
       return;
     }
 
+    // For account/upload types, require login
     if (!user) {
       navigate("/auth");
       return;
@@ -88,7 +97,20 @@ export const AddToCartButton = ({
     setLoading(false);
   };
 
-  // For link type, show "Order Now" that opens external link
+  // Still loading category type
+  if (fetchingType) {
+    return (
+      <Button
+        disabled
+        className={`w-full font-semibold py-1.5 sm:py-2 text-xs sm:text-sm rounded-full ${className}`}
+        style={buttonStyle}
+      >
+        <Loader2 className="w-4 h-4 animate-spin" />
+      </Button>
+    );
+  }
+
+  // For link type, show "Order Now" only if URL exists
   if (functionType === 'link') {
     if (!orderUrl) return null;
     return (
