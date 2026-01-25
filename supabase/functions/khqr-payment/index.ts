@@ -173,26 +173,16 @@ Deno.serve(async (req) => {
         
         try {
           // Build request payload matching iKhode API format
+          const roundedAmount = Math.round(amount * 100) / 100;
           const requestPayload: Record<string, unknown> = {
-            amount,
-            currency: currency || 'USD',
+            amount: roundedAmount,
             transactionId,
-            billNumber: transactionId,
+            email: user.email || 'customer@store.com',
+            username: gateway.config.bakong_account || 'Customer',
+            gameName: '',
             callbackUrl,
-            storeLabel: gateway.config.store_label || 'Store',
-            terminalLabel: gateway.config.terminal_label || 'POS',
+            secret: gateway.config.webhook_secret || '',
           };
-
-          // Add bakong account if configured
-          if (gateway.config.bakong_account) {
-            requestPayload.username = gateway.config.bakong_account;
-            requestPayload.accountId = gateway.config.bakong_account;
-          }
-
-          // Add secret for webhook verification if configured
-          if (gateway.config.webhook_secret) {
-            requestPayload.secret = gateway.config.webhook_secret;
-          }
 
           console.log('Calling KHQR API:', apiUrl, { ...requestPayload, secret: '[REDACTED]' });
 
