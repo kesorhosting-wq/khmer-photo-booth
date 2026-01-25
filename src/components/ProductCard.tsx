@@ -83,13 +83,10 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
       const funcType = (data?.function_type as CategoryFunction) || 'link';
       setFunctionType(funcType);
 
-      // Fetch stock count for account type products
+      // Fetch stock count for account type products using secure function
       if (funcType === 'account') {
-        const { count } = await supabase
-          .from("product_accounts")
-          .select("id", { count: 'exact', head: true })
-          .eq("product_id", product.id)
-          .eq("is_sold", false);
+        const { data: count } = await supabase
+          .rpc('get_available_account_count', { p_product_id: product.id });
         
         setStockCount(count || 0);
       }
@@ -112,12 +109,9 @@ export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProp
           filter: `product_id=eq.${product.id}`,
         },
         async () => {
-          // Refetch stock count when product_accounts change
-          const { count } = await supabase
-            .from("product_accounts")
-            .select("id", { count: 'exact', head: true })
-            .eq("product_id", product.id)
-            .eq("is_sold", false);
+          // Refetch stock count using secure function
+          const { data: count } = await supabase
+            .rpc('get_available_account_count', { p_product_id: product.id });
           
           setStockCount(count || 0);
         }
