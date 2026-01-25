@@ -9,13 +9,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Heart, Settings, LogOut, LogIn, Shield } from "lucide-react";
+import { User, Heart, Settings, LogOut, LogIn, UserPlus, Package } from "lucide-react";
 import { ProfileDialog } from "./ProfileDialog";
 import { FavoritesDialog } from "./FavoritesDialog";
 
 export const UserMenu = () => {
   const navigate = useNavigate();
-  const { user, profile, signOut, isAdmin } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
 
@@ -25,15 +25,25 @@ export const UserMenu = () => {
 
   if (!user) {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => navigate("/auth")}
-        className="text-gold hover:text-gold-light hover:bg-gold/10"
-      >
-        <LogIn className="w-4 h-4 mr-2" />
-        Sign In
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/auth?mode=login")}
+          className="text-gold hover:text-gold-light hover:bg-gold/10"
+        >
+          <LogIn className="w-4 h-4 mr-1" />
+          Login
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => navigate("/auth?mode=register")}
+          className="bg-gold text-primary-foreground hover:bg-gold-dark"
+        >
+          <UserPlus className="w-4 h-4 mr-1" />
+          Register
+        </Button>
+      </div>
     );
   }
 
@@ -50,7 +60,14 @@ export const UserMenu = () => {
             {profile?.display_name || user.email?.split("@")[0] || "Account"}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 bg-card border-gold/30">
+        <DropdownMenuContent align="end" className="w-48 bg-card border-gold/30 z-50">
+          <DropdownMenuItem
+            onClick={() => navigate("/orders")}
+            className="cursor-pointer"
+          >
+            <Package className="w-4 h-4 mr-2" />
+            My Orders
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setFavoritesOpen(true)}
             className="cursor-pointer"
@@ -65,18 +82,6 @@ export const UserMenu = () => {
             <Settings className="w-4 h-4 mr-2" />
             Profile Settings
           </DropdownMenuItem>
-          {isAdmin && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => navigate("/admin")}
-                className="cursor-pointer"
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Admin Panel
-              </DropdownMenuItem>
-            </>
-          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={handleSignOut}

@@ -1,33 +1,39 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, ArrowLeft } from "lucide-react";
 import khmerMandala from "@/assets/khmer-mandala.jpg";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(searchParams.get("mode") === "register");
+
+  useEffect(() => {
+    // Update mode when URL changes
+    setIsSignUp(searchParams.get("mode") === "register");
+  }, [searchParams]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (session) {
-          navigate("/admin");
+          navigate("/");
         }
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/admin");
+        navigate("/");
       }
     });
 
@@ -55,7 +61,7 @@ const Auth = () => {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/admin`,
+            emailRedirectTo: `${window.location.origin}/`,
           },
         });
         if (error) throw error;
@@ -70,7 +76,6 @@ const Auth = () => {
         toast.success("Welcome back!");
       }
     } catch (error: any) {
-      console.error("Auth error:", error);
       if (error.message.includes("Invalid login credentials")) {
         toast.error("Invalid email or password");
       } else if (error.message.includes("User already registered")) {
@@ -85,7 +90,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="w-full max-w-md">
         {/* Decorative Header */}
         <div className="text-center mb-8">
@@ -94,8 +99,12 @@ const Auth = () => {
             alt="" 
             className="w-20 h-20 mx-auto mb-4 ornament-glow opacity-80"
           />
-          <h1 className="text-3xl font-display gold-text mb-2">Admin Portal</h1>
-          <p className="text-muted-foreground">Sign in to manage your products</p>
+          <h1 className="text-3xl font-display gold-text mb-2">
+            {isSignUp ? "Create Account" : "Welcome Back"}
+          </h1>
+          <p className="text-muted-foreground">
+            {isSignUp ? "Sign up to start shopping" : "Sign in to your account"}
+          </p>
         </div>
 
         {/* Login Form */}
@@ -109,7 +118,7 @@ const Auth = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@example.com"
+                  placeholder="your@email.com"
                   className="pl-10 bg-input border-gold/30 text-foreground"
                 />
               </div>
@@ -134,12 +143,17 @@ const Auth = () => {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {isSignUp && (
+                <p className="text-xs text-muted-foreground">
+                  Password must be at least 6 characters
+                </p>
+              )}
             </div>
 
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-gold text-primary-foreground hover:bg-gold-dark font-display"
+              className="w-full bg-gold text-primary-foreground hover:bg-gold-dark font-display text-lg py-5"
             >
               {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
             </Button>
@@ -151,16 +165,20 @@ const Auth = () => {
               onClick={() => setIsSignUp(!isSignUp)}
               className="text-gold hover:text-gold-light text-sm"
             >
-              {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
+              {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
             </button>
           </div>
         </div>
 
         {/* Back to Home */}
         <div className="text-center mt-6">
-          <a href="/" className="text-muted-foreground hover:text-gold text-sm">
-            ← Back to Home
-          </a>
+          <button 
+            onClick={() => navigate("/")} 
+            className="text-muted-foreground hover:text-gold text-sm inline-flex items-center gap-1"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </button>
         </div>
       </div>
     </div>
