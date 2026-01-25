@@ -85,10 +85,10 @@ Deno.serve(async (req) => {
         .eq('is_active', true)
         .single();
 
-      // Generate transaction ID
-      const timestamp = Date.now().toString(36).toUpperCase();
-      const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-      const transactionId = `ORD-${timestamp}-${random}`;
+      // Generate transaction ID (max 25 chars for Bakong compatibility)
+      const timestamp = Date.now().toString(36).toUpperCase().slice(-8);
+      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const transactionId = `ORD-${timestamp}-${random}`.slice(0, 25);
 
       // Create orders for each item
       const orderPromises = items.map(async (item) => {
@@ -172,21 +172,52 @@ Deno.serve(async (req) => {
         const callbackUrl = `${supabaseUrl}/functions/v1/khqr-webhook/${primaryOrderId}`;
         
         try {
+          // Build request payload matching iKhode API format
+          const requestPayload: Record<string, unknown> = {
+            amount,
+            currency: currency || 'USD',
+            transactionId,
+            billNumber: transactionId,
+            callbackUrl,
+            storeLabel: gateway.config.store_label || 'Store',
+            terminalLabel: gateway.config.terminal_label || 'POS',
+          };
+
+          // Add bakong account if configured
+          if (gateway.config.bakong_account) {
+            requestPayload.username = gateway.config.bakong_account;
+            requestPayload.accountId = gateway.config.bakong_account;
+          }
+
+          // Add secret for webhook verification if configured
+          if (gateway.config.webhook_secret) {
+            requestPayload.secret = gateway.config.webhook_secret;
+          }
+
+          console.log('Calling KHQR API:', apiUrl, { ...requestPayload, secret: '[REDACTED]' });
+
           const response = await fetch(`${apiUrl}/generate-khqr`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              amount,
-              currency: currency || 'USD',
-              transactionId,
-              callbackUrl,
-              username: gateway.config.bakong_account || '',
-            }),
+            body: JSON.stringify(requestPayload),
           });
 
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('KHQR API error response:', response.status, errorText);
+            throw new Error(`KHQR API returned ${response.status}: ${errorText}`);
+          }
+
           const result = await response.json();
-          qrCodeData = result.qrCodeData || result.qrCode;
+          console.log('KHQR API response:', { success: !!result.qrCodeData || !!result.qrCode });
+          
+          qrCodeData = result.qrCodeData || result.qrCode || result.data?.qrCode;
           wsUrl = gateway.config.websocket_url || '';
+
+          if (!qrCodeData) {
+            console.error('No QR code in response:', result);
+            throw new Error('No QR code returned from API');
+          }
         } catch (error) {
           console.error('External API error:', error);
           // Fall back to placeholder QR

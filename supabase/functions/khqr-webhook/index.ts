@@ -36,20 +36,23 @@ Deno.serve(async (req) => {
       .single();
 
     const webhookSecret = gateway?.config?.webhook_secret;
-    if (webhookSecret) {
-      const authHeader = req.headers.get('Authorization');
-      const token = authHeader?.replace('Bearer ', '');
-      if (token !== webhookSecret) {
-        console.error('Invalid webhook secret');
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+    const authHeader = req.headers.get('Authorization');
+    const token = authHeader?.replace('Bearer ', '') || '';
+
+    console.log(`[Webhook] Order: ${orderId}`);
+    console.log(`[Webhook] Expected Secret: ${webhookSecret ? '[SET]' : '[NOT SET]'}`);
+    console.log(`[Webhook] Received Token: ${token ? '[PROVIDED]' : '[MISSING]'}`);
+
+    if (webhookSecret && token !== webhookSecret) {
+      console.error('[Webhook] Unauthorized: Invalid secret key');
+      return new Response(
+        JSON.stringify({ status: 'error', message: 'Unauthorized: Invalid secret key.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const body = await req.json().catch(() => ({}));
-    console.log('Webhook received for order:', orderId, body);
+    console.log('[Webhook] Payload:', JSON.stringify(body));
 
     // Get the order
     const { data: order, error: orderError } = await supabase
