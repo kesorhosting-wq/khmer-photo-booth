@@ -781,27 +781,62 @@ const Admin = () => {
                   );
                 })()}
 
-                {/* Account/File Managers for existing products */}
-                {editingId && categoryIds.length > 0 && (() => {
+                {/* Account/File Managers or Save First Message */}
+                {categoryIds.length > 0 && (() => {
                   const selectedCategory = categories.find(c => c.id === categoryIds[0]);
                   const functionType = selectedCategory?.function_type;
                   
                   if (functionType === 'account') {
-                    return <ProductAccountsManager productId={editingId} />;
+                    if (editingId) {
+                      return <ProductAccountsManager productId={editingId} />;
+                    } else {
+                      return (
+                        <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30 text-center">
+                          <div className="text-3xl mb-2">🔑</div>
+                          <p className="text-sm text-green-300">
+                            <strong>Save the product first</strong>, then edit it to add account details for sale.
+                          </p>
+                        </div>
+                      );
+                    }
                   }
+                  
                   if (functionType === 'upload') {
-                    return <ProductFileManager productId={editingId} />;
+                    if (editingId) {
+                      return <ProductFileManager productId={editingId} />;
+                    } else {
+                      return (
+                        <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/30 text-center">
+                          <div className="text-3xl mb-2">📁</div>
+                          <p className="text-sm text-purple-300">
+                            <strong>Save the product first</strong>, then edit it to upload the downloadable file.
+                          </p>
+                        </div>
+                      );
+                    }
                   }
+                  
                   return null;
                 })()}
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-2">
                   <Button 
                     onClick={handleSubmit} 
-                    disabled={!name || !preview || submitting}
+                    disabled={(() => {
+                      if (!name || !preview) return true;
+                      if (submitting) return true;
+                      
+                      // Validate based on category type
+                      const selectedCategory = categories.find(c => c.id === categoryIds[0]);
+                      if (selectedCategory?.function_type === 'link' && !orderUrl) return true;
+                      if (selectedCategory?.function_type === 'account' && !price) return true;
+                      if (selectedCategory?.function_type === 'upload' && !price) return true;
+                      
+                      return false;
+                    })()}
                     className="flex-1 bg-gold text-primary-foreground hover:bg-gold-dark font-display"
                   >
-                    {submitting ? "Saving..." : editingId ? "Update Product" : "Add Product"}
+                    {submitting ? "Saving..." : editingId ? "Update Product" : "Save Product"}
                   </Button>
                   {editingId && (
                     <Button variant="ghost" onClick={resetForm} className="text-foreground">
@@ -809,6 +844,31 @@ const Admin = () => {
                     </Button>
                   )}
                 </div>
+
+                {/* Validation hints */}
+                {(() => {
+                  const selectedCategory = categories.find(c => c.id === categoryIds[0]);
+                  const hints: string[] = [];
+                  
+                  if (!name) hints.push("Product name is required");
+                  if (!preview) hints.push("Product image is required");
+                  if (selectedCategory?.function_type === 'link' && !orderUrl) {
+                    hints.push("Order Now link is required for Link products");
+                  }
+                  if ((selectedCategory?.function_type === 'account' || selectedCategory?.function_type === 'upload') && !price) {
+                    hints.push("Price is required for checkout products");
+                  }
+                  
+                  if (hints.length === 0) return null;
+                  
+                  return (
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      {hints.map((hint, i) => (
+                        <p key={i}>⚠️ {hint}</p>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             </DialogContent>
           </Dialog>
@@ -826,51 +886,74 @@ const Admin = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.map((product) => (
-              <div key={product.id} className="product-frame rounded-lg p-3 group">
-                <div className="relative overflow-hidden rounded-md aspect-square mb-3">
-                  <img 
-                    src={product.image_url} 
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <Button
-                      size="icon"
-                      onClick={() => handleEdit(product)}
-                      className="bg-gold text-primary-foreground hover:bg-gold-dark"
-                      title="Edit"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      onClick={() => handleClone(product)}
-                      className="bg-gold/80 text-primary-foreground hover:bg-gold"
-                      title="Clone"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      onClick={() => handleDelete(product.id)}
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+            {products.map((product) => {
+              // Get category function type for this product
+              const productCategory = categories.find(c => c.id === product.category_id);
+              const functionType = productCategory?.function_type;
+              
+              return (
+                <div key={product.id} className="product-frame rounded-lg p-3 group">
+                  <div className="relative overflow-hidden rounded-md aspect-square mb-3">
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Category Type Badge */}
+                    {functionType && (
+                      <div className={`absolute top-2 left-2 px-2 py-1 rounded text-[10px] font-medium ${
+                        functionType === 'link' ? 'bg-blue-500/80 text-white' :
+                        functionType === 'account' ? 'bg-green-500/80 text-white' :
+                        'bg-purple-500/80 text-white'
+                      }`}>
+                        {functionType === 'link' && '🔗 Link'}
+                        {functionType === 'account' && '🔑 Account'}
+                        {functionType === 'upload' && '📁 Upload'}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button
+                        size="icon"
+                        onClick={() => handleEdit(product)}
+                        className="bg-gold text-primary-foreground hover:bg-gold-dark"
+                        title="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        onClick={() => handleClone(product)}
+                        className="bg-gold/80 text-primary-foreground hover:bg-gold"
+                        title="Clone"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        onClick={() => handleDelete(product.id)}
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="text-center space-y-1">
+                    <h3 className="font-display text-gold-light font-semibold truncate">
+                      {product.name}
+                    </h3>
+                    {product.price && (
+                      <p className="text-gold font-bold">{product.price}</p>
+                    )}
+                    {productCategory && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {productCategory.name}
+                      </p>
+                    )}
                   </div>
                 </div>
-                <div className="text-center space-y-1">
-                  <h3 className="font-display text-gold-light font-semibold truncate">
-                    {product.name}
-                  </h3>
-                  {product.price && (
-                    <p className="text-gold font-bold">{product.price}</p>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
