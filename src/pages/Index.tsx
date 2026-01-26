@@ -100,7 +100,7 @@ interface Category {
 
 const Index = () => {
   const [settings, setSettings] = useState<SiteSettings>({
-    siteName: "Angkor Handicraft",
+    siteName: "Pinkkaa",
     logo: null,
     logoWidth: 80,
     logoHeight: 80,
@@ -109,7 +109,7 @@ const Index = () => {
     logoPositionLeft: null,
     logoPositionRight: null,
     headerBg: "gradient",
-    footerText: "© 2024 Angkor Handicraft. Preserving Khmer artistry.",
+    footerText: "© 2024 Pinkkaa. All rights reserved.",
     footerBgColor: "#1a1a2e",
     footerTextColor: "#d4af37",
     siteNameColor: "#d4af37",
@@ -138,7 +138,7 @@ const Index = () => {
     productCardBorderColor: "#d4af37",
     productCardShineColor: "#d4af37",
     productCardShineSpeed: 2,
-    pageTitle: "Angkor Handicraft",
+    pageTitle: "Pinkkaa",
     faviconUrl: null,
     bodyBgColor: "#0d0d0d",
     bodyBgImageUrl: null,
@@ -208,7 +208,7 @@ const Index = () => {
 
     if (data) {
       setSettings({
-        siteName: data.site_name || "Angkor Handicraft",
+        siteName: data.site_name || "Pinkkaa",
         logo: data.logo_url,
         logoWidth: data.logo_width || 80,
         logoHeight: data.logo_height || 80,
@@ -217,7 +217,7 @@ const Index = () => {
         logoPositionLeft: data.logo_position_left ?? null,
         logoPositionRight: data.logo_position_right ?? null,
         headerBg: data.header_bg_url || "gradient",
-        footerText: data.footer_text || "© 2024 Angkor Handicraft.",
+        footerText: data.footer_text || "© 2024 Pinkkaa.",
         footerBgColor: data.footer_bg_color || "#1a1a2e",
         footerTextColor: data.footer_text_color || "#d4af37",
         siteNameColor: data.site_name_color || "#d4af37",
@@ -246,7 +246,7 @@ const Index = () => {
         productCardBorderColor: data.product_card_border_color || "#d4af37",
         productCardShineColor: data.product_card_shine_color || "#d4af37",
         productCardShineSpeed: data.product_card_shine_speed || 2,
-        pageTitle: data.page_title || "Angkor Handicraft",
+        pageTitle: data.page_title || "Pinkkaa",
         faviconUrl: data.favicon_url,
         bodyBgColor: data.body_bg_color || "#0d0d0d",
         bodyBgImageUrl: data.body_bg_image_url,

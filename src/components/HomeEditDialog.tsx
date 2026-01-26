@@ -143,7 +143,7 @@ export const HomeEditDialog = () => {
   const [productCardShineSpeed, setProductCardShineSpeed] = useState(2);
   
   // Browser Tab Settings
-  const [pageTitle, setPageTitle] = useState("Angkor Handicraft");
+  const [pageTitle, setPageTitle] = useState("Pinkkaa");
   const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
   
   // Body Background Settings
