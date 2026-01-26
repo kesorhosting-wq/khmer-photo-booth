@@ -156,6 +156,25 @@
     50% { transform: translateY(-10px); }
   }
 
+  /* Animation delays for staggered effects */
+  .animation-delay-500 { animation-delay: 0.5s; }
+  .animation-delay-1000 { animation-delay: 1s; }
+  .animation-delay-1500 { animation-delay: 1.5s; }
+  .animation-delay-2000 { animation-delay: 2s; }
+  .animation-delay-2500 { animation-delay: 2.5s; }
+  .animation-delay-3000 { animation-delay: 3s; }
+  .animation-delay-4000 { animation-delay: 4s; }
+
+  /* Scale in animation */
+  .animate-scale-in {
+    animation: scale-in 0.5s ease-out;
+  }
+
+  @keyframes scale-in {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
   /* Festival Theme Animations */
   .animate-snowfall {
     animation: snowfall linear infinite;

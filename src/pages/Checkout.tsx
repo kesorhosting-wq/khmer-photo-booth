@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Loader2, QrCode, CheckCircle } from "lucide-react";
+import { ArrowLeft, Loader2, QrCode, CheckCircle, Heart, Sparkles, Star } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 
@@ -15,6 +15,13 @@ interface PaymentState {
   orderId?: string;
   wsUrl?: string;
 }
+
+// Cute floating sticker component
+const FloatingSticker = ({ emoji, className }: { emoji: string; className: string }) => (
+  <span className={`absolute text-2xl md:text-3xl animate-float pointer-events-none select-none ${className}`}>
+    {emoji}
+  </span>
+);
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -38,7 +45,6 @@ const Checkout = () => {
   useEffect(() => {
     if (!paymentState.wsUrl || !paymentState.orderId) return;
 
-    // Ensure we use secure WebSocket (wss://) for HTTPS pages
     let wsUrl = paymentState.wsUrl;
     if (wsUrl.startsWith('ws://') && window.location.protocol === 'https:') {
       wsUrl = wsUrl.replace('ws://', 'wss://');
@@ -54,17 +60,15 @@ const Checkout = () => {
         if (data.status === 'paid' || data.success) {
           setPaymentState(prev => ({ ...prev, status: 'success' }));
           await clearCart();
-          toast.success("Payment successful!");
+          toast.success("Payment successful! 🎉");
         }
       };
 
       ws.onerror = () => {
-        // Fall back to polling if WebSocket fails
         startPolling(paymentState.orderId!);
       };
     } catch (error) {
       console.error('WebSocket connection error:', error);
-      // Fall back to polling if WebSocket connection fails
       startPolling(paymentState.orderId!);
     }
 
@@ -85,11 +89,10 @@ const Checkout = () => {
         clearInterval(interval);
         setPaymentState(prev => ({ ...prev, status: 'success' }));
         await clearCart();
-        toast.success("Payment successful!");
+        toast.success("Payment successful! 🎉");
       }
     }, 3000);
 
-    // Stop polling after 10 minutes
     setTimeout(() => clearInterval(interval), 600000);
   };
 
@@ -118,7 +121,6 @@ const Checkout = () => {
     setPaymentState({ status: 'generating' });
 
     try {
-      // Call edge function to generate KHQR and create order
       const { data, error } = await supabase.functions.invoke('khqr-payment', {
         body: {
           action: 'generate-khqr',
@@ -142,7 +144,6 @@ const Checkout = () => {
         wsUrl: data.wsUrl,
       });
 
-      // Start polling as fallback
       if (data.orderId && !data.wsUrl) {
         startPolling(data.orderId);
       }
@@ -157,134 +158,190 @@ const Checkout = () => {
     navigate("/orders");
   };
 
-  // Redirect if not authenticated (after auth is loaded)
   if (!authLoading && !user) {
-    return null; // Will redirect via useEffect
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-fuchsia-50 relative overflow-hidden">
       <Toaster position="top-center" richColors />
       
+      {/* Cute floating stickers background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <FloatingSticker emoji="💖" className="top-[10%] left-[5%]" />
+        <FloatingSticker emoji="✨" className="top-[15%] right-[10%] animation-delay-1000" />
+        <FloatingSticker emoji="🌸" className="top-[30%] left-[8%] animation-delay-2000" />
+        <FloatingSticker emoji="💕" className="top-[45%] right-[5%] animation-delay-500" />
+        <FloatingSticker emoji="🎀" className="bottom-[20%] left-[10%] animation-delay-1500" />
+        <FloatingSticker emoji="⭐" className="bottom-[30%] right-[8%] animation-delay-3000" />
+        <FloatingSticker emoji="🌷" className="top-[60%] left-[3%] animation-delay-2500" />
+        <FloatingSticker emoji="💗" className="bottom-[10%] right-[15%] animation-delay-4000" />
+      </div>
+      
       {/* Header */}
-      <header className="bg-card border-b border-gold/20 py-4 px-4">
+      <header className="bg-white/80 backdrop-blur-md border-b border-pink-200 py-4 px-4 sticky top-0 z-50">
         <div className="container mx-auto flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate("/cart")}
             disabled={paymentState.status === 'pending'}
+            className="hover:bg-pink-100 text-pink-600"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-display gold-text">Checkout</h1>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-pink-500" />
+            <h1 className="text-xl font-bold bg-gradient-to-r from-pink-500 via-rose-500 to-fuchsia-500 bg-clip-text text-transparent">
+              Checkout
+            </h1>
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-md">
+      <main className="container mx-auto px-4 py-8 max-w-md relative z-10">
         {paymentState.status === 'success' ? (
-          <div className="text-center py-16 space-y-6">
-            <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
-              <CheckCircle className="w-10 h-10 text-green-500" />
+          <div className="text-center py-12 space-y-6">
+            {/* Success celebration */}
+            <div className="relative inline-block">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center mx-auto shadow-lg shadow-green-200 animate-scale-in">
+                <CheckCircle className="w-12 h-12 text-white" />
+              </div>
+              <span className="absolute -top-2 -right-2 text-3xl animate-bounce">🎉</span>
+              <span className="absolute -bottom-1 -left-2 text-2xl animate-bounce animation-delay-500">💖</span>
             </div>
-            <h2 className="text-2xl font-display text-foreground">Payment Successful!</h2>
-            <p className="text-muted-foreground">
-              Your order has been confirmed. You can view your purchased items in your orders.
+            <h2 className="text-2xl font-bold text-gray-800">Yay! Payment Successful!</h2>
+            <p className="text-gray-500">
+              Your order is confirmed ✨ Check your orders for details!
             </p>
-            <div className="flex flex-col gap-3">
-              <Button onClick={handleViewOrders} className="bg-gold text-primary-foreground hover:bg-gold-dark">
+            <div className="flex flex-col gap-3 pt-4">
+              <Button 
+                onClick={handleViewOrders} 
+                className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg shadow-pink-200 rounded-full py-6"
+              >
+                <Heart className="w-4 h-4 mr-2" />
                 View My Orders
               </Button>
-              <Button variant="outline" onClick={() => navigate("/")}>
-                Continue Shopping
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/")}
+                className="border-pink-300 text-pink-600 hover:bg-pink-50 rounded-full"
+              >
+                Continue Shopping 🛍️
               </Button>
             </div>
           </div>
         ) : paymentState.status === 'pending' && paymentState.qrCodeData ? (
           <div className="space-y-6">
-            {/* Order Summary */}
-            <div className="bg-card border border-gold/20 rounded-lg p-4">
-              <h3 className="font-semibold text-foreground mb-3">Order Summary</h3>
+            {/* Order Summary Card */}
+            <div className="bg-white/90 backdrop-blur-sm border-2 border-pink-200 rounded-3xl p-5 shadow-lg shadow-pink-100">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">🛒</span>
+                <h3 className="font-bold text-gray-800">Order Summary</h3>
+              </div>
               <div className="space-y-2">
                 {items.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
+                    <span className="text-gray-600">
                       {item.product?.name} x{item.quantity}
                     </span>
-                    <span className="text-foreground">{item.product?.price}</span>
+                    <span className="font-medium text-gray-800">{item.product?.price}</span>
                   </div>
                 ))}
-                <div className="border-t border-gold/20 pt-2 mt-2 flex justify-between font-semibold">
-                  <span className="text-foreground">Total</span>
-                  <span className="text-gold">{totalAmount.toFixed(2)} {currency}</span>
+                <div className="border-t-2 border-dashed border-pink-200 pt-3 mt-3 flex justify-between font-bold">
+                  <span className="text-gray-800">Total</span>
+                  <span className="text-pink-600 text-lg">{totalAmount.toFixed(2)} {currency}</span>
                 </div>
               </div>
             </div>
 
-            {/* QR Code */}
-            <div className="bg-card border border-gold/20 rounded-lg p-6 text-center">
-              <h3 className="font-semibold text-foreground mb-4">Scan to Pay with Bakong</h3>
-              <div className="bg-card p-4 rounded-lg inline-block mb-4 border border-border">
+            {/* QR Code Card */}
+            <div className="bg-white/90 backdrop-blur-sm border-2 border-pink-200 rounded-3xl p-6 text-center shadow-lg shadow-pink-100 relative overflow-hidden">
+              {/* Decorative corner stickers */}
+              <span className="absolute top-3 left-3 text-2xl">💳</span>
+              <span className="absolute top-3 right-3 text-2xl">✨</span>
+              
+              <h3 className="font-bold text-gray-800 mb-2 mt-4">Scan to Pay with Bakong</h3>
+              <p className="text-sm text-pink-500 mb-4">🏦 Quick & Secure Payment</p>
+              
+              <div className="bg-white p-4 rounded-2xl inline-block mb-4 border-2 border-pink-100 shadow-inner">
                 <img 
                   src={paymentState.qrCodeData} 
                   alt="Payment QR Code"
-                  className="w-64 h-64 object-contain"
+                  className="w-56 h-56 md:w-64 md:h-64 object-contain"
                 />
               </div>
-              <p className="text-sm text-muted-foreground mb-2">
-                Transaction ID: {paymentState.transactionId}
+              
+              <p className="text-xs text-gray-500 mb-3 font-mono bg-pink-50 py-2 px-3 rounded-full inline-block">
+                ID: {paymentState.transactionId}
               </p>
-              <div className="flex items-center justify-center gap-2 text-sm text-gold">
+              
+              <div className="flex items-center justify-center gap-2 text-sm text-pink-600 bg-pink-50 py-3 rounded-full">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Waiting for payment...
+                <span>Waiting for payment...</span>
+                <span className="text-lg">💕</span>
               </div>
             </div>
 
             <Button 
               variant="outline" 
               onClick={() => setPaymentState({ status: 'idle' })}
-              className="w-full"
+              className="w-full border-pink-300 text-pink-600 hover:bg-pink-50 rounded-full"
             >
               Cancel Payment
             </Button>
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Order Summary */}
-            <div className="bg-card border border-gold/20 rounded-lg p-4">
-              <h3 className="font-semibold text-foreground mb-3">Order Summary</h3>
+            {/* Order Summary Card */}
+            <div className="bg-white/90 backdrop-blur-sm border-2 border-pink-200 rounded-3xl p-5 shadow-lg shadow-pink-100 relative overflow-hidden">
+              <span className="absolute -top-1 -right-1 text-3xl rotate-12">🌸</span>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">🛒</span>
+                <h3 className="font-bold text-gray-800">Order Summary</h3>
+              </div>
               <div className="space-y-2">
                 {items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
+                  <div key={item.id} className="flex justify-between text-sm py-1">
+                    <span className="text-gray-600">
                       {item.product?.name} x{item.quantity}
                     </span>
-                    <span className="text-foreground">{item.product?.price}</span>
+                    <span className="font-medium text-gray-800">{item.product?.price}</span>
                   </div>
                 ))}
-                <div className="border-t border-gold/20 pt-2 mt-2 flex justify-between font-semibold">
-                  <span className="text-foreground">Total</span>
-                  <span className="text-gold">{totalAmount.toFixed(2)} {currency}</span>
+                <div className="border-t-2 border-dashed border-pink-200 pt-3 mt-3 flex justify-between font-bold">
+                  <span className="text-gray-800 flex items-center gap-1">
+                    Total <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                  </span>
+                  <span className="text-pink-600 text-lg">{totalAmount.toFixed(2)} {currency}</span>
                 </div>
               </div>
             </div>
 
-            {/* Payment Method */}
-            <div className="bg-card border border-gold/20 rounded-lg p-4">
-              <h3 className="font-semibold text-foreground mb-3">Payment Method</h3>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-gold/10">
-                <QrCode className="h-8 w-8 text-gold" />
+            {/* Payment Method Card */}
+            <div className="bg-white/90 backdrop-blur-sm border-2 border-pink-200 rounded-3xl p-5 shadow-lg shadow-pink-100">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">💳</span>
+                <h3 className="font-bold text-gray-800">Payment Method</h3>
+              </div>
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-pink-50 to-rose-50 border-2 border-pink-100">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-200">
+                  <QrCode className="h-7 w-7 text-white" />
+                </div>
                 <div>
-                  <p className="font-medium text-foreground">Bakong KHQR</p>
-                  <p className="text-sm text-muted-foreground">Scan QR code to pay</p>
+                  <p className="font-bold text-gray-800">Bakong KHQR</p>
+                  <p className="text-sm text-gray-500 flex items-center gap-1">
+                    Scan QR code to pay <span>📱</span>
+                  </p>
                 </div>
               </div>
             </div>
 
+            {/* Pay Button */}
             <Button 
               onClick={handlePayment}
               disabled={paymentState.status === 'generating'}
-              className="w-full bg-gold text-primary-foreground hover:bg-gold-dark font-display text-lg py-6"
+              className="w-full bg-gradient-to-r from-pink-500 via-rose-500 to-fuchsia-500 hover:from-pink-600 hover:via-rose-600 hover:to-fuchsia-600 text-white font-bold text-lg py-7 rounded-full shadow-xl shadow-pink-200 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               {paymentState.status === 'generating' ? (
                 <>
@@ -292,12 +349,18 @@ const Checkout = () => {
                   Generating QR...
                 </>
               ) : (
-                <>
-                  <QrCode className="h-5 w-5 mr-2" />
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
                   Pay {totalAmount.toFixed(2)} {currency}
-                </>
+                  <span className="text-xl">💖</span>
+                </span>
               )}
             </Button>
+            
+            {/* Cute footer message */}
+            <p className="text-center text-sm text-gray-400 flex items-center justify-center gap-2">
+              <span>🔒</span> Secure payment powered by Bakong <span>✨</span>
+            </p>
           </div>
         )}
       </main>
