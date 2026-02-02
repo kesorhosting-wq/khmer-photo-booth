@@ -36,7 +36,7 @@ export const SiteHeader = ({ siteName, logo, logoWidth = 80, logoHeight = 80, lo
 
       {/* Main Header Content */}
       <div 
-        className="relative z-10 flex flex-col items-center justify-center h-[100px] sm:h-[120px]"
+        className="relative z-10 flex flex-col items-center justify-center h-[100px] sm:h-[120px] pt-8 sm:pt-0"
         style={{
           paddingTop: logoPositionTop !== null ? logoPositionTop : undefined,
           paddingBottom: logoPositionBottom !== null ? logoPositionBottom : undefined,
@@ -65,7 +65,7 @@ export const SiteHeader = ({ siteName, logo, logoWidth = 80, logoHeight = 80, lo
       </div>
 
       {/* Cart, User Menu & Festival Theme Switcher */}
-      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-1 sm:gap-2">
         <CartButton />
         <UserMenu />
         {onFestivalThemeChange && onColorModeChange && (
