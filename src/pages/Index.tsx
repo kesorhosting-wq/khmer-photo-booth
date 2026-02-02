@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { ProductGrid } from "@/components/ProductGrid";
 import { DecorativeSection } from "@/components/DecorativeSection";
 import { FestivalTheme, ColorMode, SnowEffect } from "@/components/FestivalThemeSwitcher";
-
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
@@ -352,21 +352,25 @@ const Index = () => {
   };
 
   return (
-    <div 
-      className={`min-h-screen ${getThemeClass()} ${colorMode === 'light' ? 'light-mode' : ''}`}
-      style={{
-        backgroundColor: colorMode === 'light' ? '#faf5ef' : settings.bodyBgColor,
-        backgroundImage: colorMode === 'light' ? undefined : (settings.bodyBgImageUrl ? `url(${settings.bodyBgImageUrl})` : undefined),
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        color: colorMode === 'light' ? '#2d1810' : settings.bodyTextColor,
-      }}
-    >
-      {/* Festival Theme Effects */}
-      {festivalTheme === 'christmas' && <SnowEffect />}
+    <>
+      {/* Loading Screen */}
+      <LoadingScreen isLoading={loading} minimumLoadTime={600} />
+      
+      <div 
+        className={`min-h-screen ${getThemeClass()} ${colorMode === 'light' ? 'light-mode' : ''}`}
+        style={{
+          backgroundColor: colorMode === 'light' ? '#faf5ef' : settings.bodyBgColor,
+          backgroundImage: colorMode === 'light' ? undefined : (settings.bodyBgImageUrl ? `url(${settings.bodyBgImageUrl})` : undefined),
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          color: colorMode === 'light' ? '#2d1810' : settings.bodyTextColor,
+        }}
+      >
+        {/* Festival Theme Effects */}
+        {festivalTheme === 'christmas' && <SnowEffect />}
 
-      <Toaster position="top-center" richColors />
+        <Toaster position="top-center" richColors />
       
       {/* Header */}
       <SiteHeader
@@ -492,9 +496,10 @@ const Index = () => {
         <img src={adminIcon} alt="Admin" className="w-full h-full object-cover" />
       </a>
 
-      {/* Footer */}
-      <SiteFooter settings={settings} categories={categories} />
-    </div>
+        {/* Footer */}
+        <SiteFooter settings={settings} categories={categories} />
+      </div>
+    </>
   );
 };
 
