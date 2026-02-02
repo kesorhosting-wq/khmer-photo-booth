@@ -30,18 +30,18 @@ export const UserMenu = () => {
           variant="ghost"
           size="sm"
           onClick={() => navigate("/auth?mode=login")}
-          className="text-gold hover:text-gold-light hover:bg-gold/10"
+          className="text-gold hover:text-gold-light hover:bg-gold/10 text-xs sm:text-sm px-2 sm:px-3"
         >
-          <LogIn className="w-4 h-4 mr-1" />
-          Login
+          <LogIn className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+          <span className="hidden xs:inline">Login</span>
         </Button>
         <Button
           size="sm"
           onClick={() => navigate("/auth?mode=register")}
-          className="bg-gold text-primary-foreground hover:bg-gold-dark"
+          className="bg-gold text-primary-foreground hover:bg-gold-dark text-xs sm:text-sm px-2 sm:px-3"
         >
-          <UserPlus className="w-4 h-4 mr-1" />
-          Register
+          <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+          <span className="hidden xs:inline">Register</span>
         </Button>
       </div>
     );
