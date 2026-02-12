@@ -83,16 +83,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
-    // For account products, check if any accounts are available
+    // For account products, check if any accounts are available using secure RPC
     if (functionType === 'account') {
-      const { data: accounts, error } = await supabase
-        .from("product_accounts")
-        .select("id")
-        .eq("product_id", productId)
-        .eq("is_sold", false)
-        .limit(1);
+      const { data: count, error } = await supabase
+        .rpc('get_available_account_count', { p_product_id: productId });
 
-      if (error || !accounts || accounts.length === 0) {
+      if (error || !count || count === 0) {
         toast.error("This product is out of stock");
         return false;
       }
