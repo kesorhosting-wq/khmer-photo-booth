@@ -1,6 +1,11 @@
+import { useState } from "react";
+import { Menu } from "lucide-react";
 import { FestivalThemeSwitcher, FestivalTheme, ColorMode } from "./FestivalThemeSwitcher";
 import { UserMenu } from "./UserMenu";
 import { CartButton } from "./CartButton";
+import { Button } from "./ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SiteHeaderProps {
   siteName: string;
@@ -64,8 +69,8 @@ export const SiteHeader = ({ siteName, logo, logoWidth = 80, logoHeight = 80, lo
         </h1>
       </div>
 
-      {/* Cart, User Menu & Festival Theme Switcher */}
-      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-1 sm:gap-2">
+      {/* Desktop: Cart, User Menu & Festival Theme Switcher */}
+      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-50 hidden sm:flex items-center gap-2">
         <CartButton />
         <UserMenu />
         {onFestivalThemeChange && onColorModeChange && (
@@ -78,6 +83,58 @@ export const SiteHeader = ({ siteName, logo, logoWidth = 80, logoHeight = 80, lo
         )}
       </div>
 
+      {/* Mobile: Hamburger menu */}
+      <div className="absolute top-2 right-2 z-50 flex sm:hidden items-center gap-1">
+        <UserMenu />
+        <MobileMenu 
+          festivalTheme={festivalTheme}
+          onFestivalThemeChange={onFestivalThemeChange}
+          colorMode={colorMode}
+          onColorModeChange={onColorModeChange}
+        />
+      </div>
+
     </header>
+  );
+};
+
+const MobileMenu = ({ festivalTheme, onFestivalThemeChange, colorMode, onColorModeChange }: {
+  festivalTheme: FestivalTheme;
+  onFestivalThemeChange?: (theme: FestivalTheme) => void;
+  colorMode: ColorMode;
+  onColorModeChange?: (mode: ColorMode) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="text-gold hover:text-gold-light hover:bg-gold/10 h-8 w-8">
+          <Menu className="h-5 w-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-[260px] bg-card border-gold/30">
+        <SheetHeader>
+          <SheetTitle className="text-gold">Menu</SheetTitle>
+        </SheetHeader>
+        <div className="flex flex-col gap-4 mt-6">
+          <div className="flex items-center gap-2">
+            <CartButton />
+            <span className="text-sm text-foreground">Cart</span>
+          </div>
+          {onFestivalThemeChange && onColorModeChange && (
+            <div className="flex items-center gap-2">
+              <FestivalThemeSwitcher 
+                currentTheme={festivalTheme} 
+                onThemeChange={onFestivalThemeChange}
+                colorMode={colorMode}
+                onColorModeChange={onColorModeChange}
+              />
+              <span className="text-sm text-foreground">Theme</span>
+            </div>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 };
