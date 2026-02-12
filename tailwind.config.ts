@@ -14,9 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        serif: ['Cinzel', 'Noto Serif Khmer', 'serif'],
+        serif: ['Quicksand', 'Noto Serif Khmer', 'sans-serif'],
         khmer: ['Noto Serif Khmer', 'serif'],
-        display: ['Cinzel', 'serif'],
+        display: ['Quicksand', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -25,9 +25,9 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         gold: {
-          light: "hsl(var(--gold-light))",
-          DEFAULT: "hsl(var(--gold))",
-          dark: "hsl(var(--gold-dark))",
+          light: "hsl(var(--pink-light))",
+          DEFAULT: "hsl(var(--pink))",
+          dark: "hsl(var(--pink-dark))",
         },
         bronze: "hsl(var(--bronze))",
         cream: "hsl(var(--cream))",
@@ -75,8 +75,8 @@ export default {
           to: { height: "0" },
         },
         "pulse-gold": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(43 85% 55% / 0.3)" },
-          "50%": { boxShadow: "0 0 40px hsl(43 85% 55% / 0.6)" },
+          "0%, 100%": { boxShadow: "0 0 20px hsl(340 82% 62% / 0.3)" },
+          "50%": { boxShadow: "0 0 40px hsl(340 82% 62% / 0.6)" },
         },
       },
       animation: {
