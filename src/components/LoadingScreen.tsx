@@ -2,37 +2,31 @@ import { useEffect, useState } from "react";
 
 interface LoadingScreenProps {
   isLoading: boolean;
-  minimumLoadTime?: number;
 }
 
-export const LoadingScreen = ({ isLoading, minimumLoadTime = 800 }: LoadingScreenProps) => {
+export const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
   const [showLoader, setShowLoader] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
     if (!isLoading) {
-      // Start fade out animation
-      const fadeTimer = setTimeout(() => {
-        setFadeOut(true);
-      }, minimumLoadTime);
+      // Start fade out immediately when data is loaded
+      setFadeOut(true);
 
-      // Remove loader after fade animation
+      // Remove loader after fade animation completes
       const removeTimer = setTimeout(() => {
         setShowLoader(false);
-      }, minimumLoadTime + 500);
+      }, 300);
 
-      return () => {
-        clearTimeout(fadeTimer);
-        clearTimeout(removeTimer);
-      };
+      return () => clearTimeout(removeTimer);
     }
-  }, [isLoading, minimumLoadTime]);
+  }, [isLoading]);
 
   if (!showLoader) return null;
 
   return (
     <div 
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-br from-pink-100 via-rose-50 to-fuchsia-100 transition-opacity duration-500 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-br from-pink-100 via-rose-50 to-fuchsia-100 transition-opacity duration-300 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}
     >
       {/* Floating decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
