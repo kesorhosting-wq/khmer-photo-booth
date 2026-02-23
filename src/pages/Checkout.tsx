@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Loader2, QrCode, CheckCircle, Heart, Sparkles, Star } from "lucide-react";
+import { ArrowLeft, Loader2, QrCode, CheckCircle, Heart, Sparkles, Star, Ticket, X } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 
@@ -16,7 +17,13 @@ interface PaymentState {
   wsUrl?: string;
 }
 
-// Cute floating sticker component
+interface AppliedCoupon {
+  id: string;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+}
+
 const FloatingSticker = ({ emoji, className }: { emoji: string; className: string }) => (
   <span className={`absolute text-2xl md:text-3xl animate-float pointer-events-none select-none ${className}`}>
     {emoji}
@@ -28,6 +35,9 @@ const Checkout = () => {
   const { user, loading: authLoading } = useAuth();
   const { items, loading, clearCart } = useCart();
   const [paymentState, setPaymentState] = useState<PaymentState>({ status: 'idle' });
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -115,6 +125,86 @@ const Checkout = () => {
 
   const currency = items[0]?.product?.price ? getCurrency(items[0].product.price) : 'USD';
 
+  const discountAmount = appliedCoupon
+    ? appliedCoupon.discount_type === 'percentage'
+      ? totalAmount * (appliedCoupon.discount_value / 100)
+      : Math.min(appliedCoupon.discount_value, totalAmount)
+    : 0;
+
+  const finalAmount = Math.max(0, totalAmount - discountAmount);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim() || !user) return;
+    setApplyingCoupon(true);
+
+    try {
+      // Fetch coupon
+      const { data: coupon, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("code", couponCode.toUpperCase())
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!coupon) { toast.error("Invalid coupon code ❌"); return; }
+
+      // Check expiry
+      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+        toast.error("This coupon has expired ⏰"); return;
+      }
+
+      // Check max uses
+      if (coupon.max_uses && coupon.times_used >= coupon.max_uses) {
+        toast.error("This coupon has reached its usage limit"); return;
+      }
+
+      // Check single use
+      if (coupon.is_single_use && coupon.times_used > 0) {
+        toast.error("This coupon has already been used"); return;
+      }
+
+      // Check if for specific email
+      if (!coupon.for_everyone) {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser?.email !== coupon.allowed_email) {
+          toast.error("This coupon is not available for your account 🔒"); return;
+        }
+      }
+
+      // Check one per user
+      if (coupon.is_one_per_user) {
+        const { data: usage } = await supabase
+          .from("coupon_usages")
+          .select("id")
+          .eq("coupon_id", coupon.id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (usage) {
+          toast.error("You've already used this coupon 💔"); return;
+        }
+      }
+
+      setAppliedCoupon({
+        id: coupon.id,
+        code: coupon.code,
+        discount_type: coupon.discount_type,
+        discount_value: coupon.discount_value,
+      });
+      toast.success("Coupon applied! 🎉");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to apply coupon");
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+  };
+
   const handlePayment = async () => {
     if (!user) return;
 
@@ -124,8 +214,9 @@ const Checkout = () => {
       const { data, error } = await supabase.functions.invoke('khqr-payment', {
         body: {
           action: 'generate-khqr',
-          amount: totalAmount,
+          amount: finalAmount,
           currency: currency,
+          couponId: appliedCoupon?.id || null,
           items: items.map(i => ({
             productId: i.product_id,
             quantity: i.quantity,
@@ -135,6 +226,17 @@ const Checkout = () => {
       });
 
       if (error) throw error;
+
+      // Record coupon usage
+      if (appliedCoupon) {
+        await supabase.from("coupon_usages").insert({
+          coupon_id: appliedCoupon.id,
+          user_id: user.id,
+        });
+        await supabase.from("coupons").update({
+          times_used: (await supabase.from("coupons").select("times_used").eq("id", appliedCoupon.id).single()).data?.times_used! + 1,
+        }).eq("id", appliedCoupon.id);
+      }
 
       setPaymentState({
         status: 'pending',
@@ -161,6 +263,86 @@ const Checkout = () => {
   if (!authLoading && !user) {
     return null;
   }
+
+  const renderCouponSection = () => (
+    <div className="bg-white/90 backdrop-blur-sm border-2 border-pink-200 rounded-3xl p-5 shadow-lg shadow-pink-100">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xl">🎟️</span>
+        <h3 className="font-bold text-gray-800">Coupon Code</h3>
+      </div>
+      {appliedCoupon ? (
+        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-2xl p-3">
+          <div>
+            <span className="font-mono font-bold text-green-700">{appliedCoupon.code}</span>
+            <p className="text-xs text-green-600">
+              {appliedCoupon.discount_type === 'percentage'
+                ? `${appliedCoupon.discount_value}% off`
+                : `${appliedCoupon.discount_value} ${currency} off`}
+              {" "}✨
+            </p>
+          </div>
+          <Button size="icon" variant="ghost" onClick={removeCoupon} className="h-8 w-8 text-red-400 hover:text-red-600">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <Input
+            value={couponCode}
+            onChange={e => setCouponCode(e.target.value)}
+            placeholder="Enter code..."
+            className="uppercase rounded-full border-pink-200 focus:border-pink-400"
+            onKeyDown={e => e.key === 'Enter' && handleApplyCoupon()}
+          />
+          <Button
+            onClick={handleApplyCoupon}
+            disabled={applyingCoupon || !couponCode.trim()}
+            className="bg-pink-500 hover:bg-pink-600 text-white rounded-full px-4"
+          >
+            {applyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ticket className="w-4 h-4" />}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderOrderSummary = () => (
+    <div className="bg-white/90 backdrop-blur-sm border-2 border-pink-200 rounded-3xl p-5 shadow-lg shadow-pink-100 relative overflow-hidden">
+      <span className="absolute -top-1 -right-1 text-3xl rotate-12">🌸</span>
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-xl">🛒</span>
+        <h3 className="font-bold text-gray-800">Order Summary</h3>
+      </div>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div key={item.id} className="flex justify-between text-sm py-1">
+            <span className="text-gray-600">
+              {item.product?.name} x{item.quantity}
+            </span>
+            <span className="font-medium text-gray-800">{item.product?.price}</span>
+          </div>
+        ))}
+        {appliedCoupon && (
+          <>
+            <div className="border-t border-dashed border-pink-200 pt-2 mt-2 flex justify-between text-sm">
+              <span className="text-gray-600">Subtotal</span>
+              <span className="text-gray-800">{totalAmount.toFixed(2)} {currency}</span>
+            </div>
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Discount ({appliedCoupon.code}) 🎀</span>
+              <span>-{discountAmount.toFixed(2)} {currency}</span>
+            </div>
+          </>
+        )}
+        <div className="border-t-2 border-dashed border-pink-200 pt-3 mt-3 flex justify-between font-bold">
+          <span className="text-gray-800 flex items-center gap-1">
+            Total <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+          </span>
+          <span className="text-pink-600 text-lg">{finalAmount.toFixed(2)} {currency}</span>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-fuchsia-50 relative overflow-hidden">
@@ -202,7 +384,6 @@ const Checkout = () => {
       <main className="container mx-auto px-4 py-8 max-w-md relative z-10">
         {paymentState.status === 'success' ? (
           <div className="text-center py-12 space-y-6">
-            {/* Success celebration */}
             <div className="relative inline-block">
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center mx-auto shadow-lg shadow-green-200 animate-scale-in">
                 <CheckCircle className="w-12 h-12 text-white" />
@@ -233,31 +414,10 @@ const Checkout = () => {
           </div>
         ) : paymentState.status === 'pending' && paymentState.qrCodeData ? (
           <div className="space-y-6">
-            {/* Order Summary Card */}
-            <div className="bg-white/90 backdrop-blur-sm border-2 border-pink-200 rounded-3xl p-5 shadow-lg shadow-pink-100">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xl">🛒</span>
-                <h3 className="font-bold text-gray-800">Order Summary</h3>
-              </div>
-              <div className="space-y-2">
-                {items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-gray-600">
-                      {item.product?.name} x{item.quantity}
-                    </span>
-                    <span className="font-medium text-gray-800">{item.product?.price}</span>
-                  </div>
-                ))}
-                <div className="border-t-2 border-dashed border-pink-200 pt-3 mt-3 flex justify-between font-bold">
-                  <span className="text-gray-800">Total</span>
-                  <span className="text-pink-600 text-lg">{totalAmount.toFixed(2)} {currency}</span>
-                </div>
-              </div>
-            </div>
+            {renderOrderSummary()}
 
             {/* QR Code Card */}
             <div className="bg-white/90 backdrop-blur-sm border-2 border-pink-200 rounded-3xl p-6 text-center shadow-lg shadow-pink-100 relative overflow-hidden">
-              {/* Decorative corner stickers */}
               <span className="absolute top-3 left-3 text-2xl">💳</span>
               <span className="absolute top-3 right-3 text-2xl">✨</span>
               
@@ -293,30 +453,8 @@ const Checkout = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Order Summary Card */}
-            <div className="bg-white/90 backdrop-blur-sm border-2 border-pink-200 rounded-3xl p-5 shadow-lg shadow-pink-100 relative overflow-hidden">
-              <span className="absolute -top-1 -right-1 text-3xl rotate-12">🌸</span>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xl">🛒</span>
-                <h3 className="font-bold text-gray-800">Order Summary</h3>
-              </div>
-              <div className="space-y-2">
-                {items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm py-1">
-                    <span className="text-gray-600">
-                      {item.product?.name} x{item.quantity}
-                    </span>
-                    <span className="font-medium text-gray-800">{item.product?.price}</span>
-                  </div>
-                ))}
-                <div className="border-t-2 border-dashed border-pink-200 pt-3 mt-3 flex justify-between font-bold">
-                  <span className="text-gray-800 flex items-center gap-1">
-                    Total <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                  </span>
-                  <span className="text-pink-600 text-lg">{totalAmount.toFixed(2)} {currency}</span>
-                </div>
-              </div>
-            </div>
+            {renderOrderSummary()}
+            {renderCouponSection()}
 
             {/* Payment Method Card */}
             <div className="bg-white/90 backdrop-blur-sm border-2 border-pink-200 rounded-3xl p-5 shadow-lg shadow-pink-100">
@@ -351,13 +489,12 @@ const Checkout = () => {
               ) : (
                 <span className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
-                  Pay {totalAmount.toFixed(2)} {currency}
+                  Pay {finalAmount.toFixed(2)} {currency}
                   <span className="text-xl">💖</span>
                 </span>
               )}
             </Button>
             
-            {/* Cute footer message */}
             <p className="text-center text-sm text-gray-400 flex items-center justify-center gap-2">
               <span>🔒</span> Secure payment powered by Bakong <span>✨</span>
             </p>
