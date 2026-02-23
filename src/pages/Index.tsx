@@ -354,7 +354,7 @@ const Index = () => {
   return (
     <>
       {/* Loading Screen */}
-      <LoadingScreen isLoading={loading} minimumLoadTime={600} />
+      <LoadingScreen isLoading={loading} />
       
       <div 
         className={`min-h-screen ${getThemeClass()} ${colorMode === 'light' ? 'light-mode' : ''}`}
