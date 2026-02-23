@@ -26,6 +26,7 @@ import { OrderManagement } from "@/components/OrderManagement";
 import { PaymentGatewayConfigDialog } from "@/components/PaymentGatewayConfig";
 import { OrderStatsDashboard } from "@/components/OrderStatsDashboard";
 import { DatabaseExportImport } from "@/components/DatabaseExportImport";
+import { CouponManager } from "@/components/CouponManager";
 import khmerMandala from "@/assets/khmer-mandala.jpg";
 import type { CategoryFunction } from "@/types/shop";
 
@@ -454,6 +455,7 @@ const Admin = () => {
             <OrderStatsDashboard />
             <PaymentGatewayConfigDialog />
             <DatabaseExportImport />
+            <CouponManager />
             <Dialog open={open} onOpenChange={(isOpen) => { setOpen(isOpen); if (!isOpen) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="bg-gold text-primary-foreground hover:bg-gold-dark font-display gap-2">
