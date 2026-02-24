@@ -96,6 +96,7 @@ interface SiteSettings {
 interface Category {
   id: string;
   name: string;
+  function_type?: string;
 }
 
 const Index = () => {
@@ -168,7 +169,7 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [festivalTheme, setFestivalTheme] = useState<FestivalTheme>('none');
-  const [colorMode, setColorMode] = useState<ColorMode>('dark');
+  const [colorMode, setColorMode] = useState<ColorMode>('light');
 
   // Apply page title and favicon on mount
   useEffect(() => {
@@ -284,9 +285,9 @@ const Index = () => {
   };
 
   const fetchProducts = async () => {
-    // Fetch products and categories in parallel
+    // Fetch products (select only needed columns to avoid huge base64 payloads) and categories in parallel
     const [productsResult, productCatsResult] = await Promise.all([
-      supabase.from("products").select("*").order("created_at", { ascending: false }),
+      supabase.from("products").select("id, name, image_url, price, description, category_id, facebook_url, tiktok_url, telegram_url, order_url, image_fit, image_custom_width, image_custom_height").order("created_at", { ascending: false }),
       supabase.from("product_categories").select("product_id, category_id"),
     ]);
 
@@ -449,6 +450,7 @@ const Index = () => {
           <ProductGrid
               products={filteredProducts} 
               onDeleteProduct={() => {}}
+              categories={categories}
               cardTheme={{
                 bgColor: settings.productCardBgColor,
                 bgImageUrl: settings.productCardBgImageUrl,
