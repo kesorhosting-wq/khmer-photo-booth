@@ -47,14 +47,21 @@ interface DialogTheme {
   telegramIconUrl?: string | null;
 }
 
+interface CategoryInfo {
+  id: string;
+  name: string;
+  function_type?: string;
+}
+
 interface ProductGridProps {
   products: Product[];
   onDeleteProduct?: (id: string) => void;
   cardTheme?: CardTheme;
   dialogTheme?: DialogTheme;
+  categories?: CategoryInfo[];
 }
 
-export const ProductGrid = ({ products, cardTheme, dialogTheme }: ProductGridProps) => {
+export const ProductGrid = ({ products, cardTheme, dialogTheme, categories }: ProductGridProps) => {
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -72,7 +79,9 @@ export const ProductGrid = ({ products, cardTheme, dialogTheme }: ProductGridPro
   return (
     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} cardTheme={cardTheme} dialogTheme={dialogTheme} />
+        <ProductCard key={product.id} product={product} cardTheme={cardTheme} dialogTheme={dialogTheme} categoryFunctionType={
+          categories?.find(c => c.id === product.category_id)?.function_type || 'link'
+        } />
       ))}
     </div>
   );

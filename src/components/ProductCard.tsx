@@ -59,40 +59,27 @@ interface ProductCardProps {
   onDelete?: (id: string) => void;
   cardTheme?: CardTheme;
   dialogTheme?: DialogTheme;
+  categoryFunctionType?: string;
 }
 
-export const ProductCard = ({ product, cardTheme, dialogTheme }: ProductCardProps) => {
+export const ProductCard = ({ product, cardTheme, dialogTheme, categoryFunctionType }: ProductCardProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [functionType, setFunctionType] = useState<CategoryFunction | null>(null);
+  const funcType = (categoryFunctionType as CategoryFunction) || 'link';
+  const [functionType, setFunctionType] = useState<CategoryFunction | null>(funcType);
   const [stockCount, setStockCount] = useState<number | null>(null);
 
-  // Fetch category function type and stock count
+  // Only fetch stock count for account type products
   useEffect(() => {
-    const fetchData = async () => {
-      if (!product.category_id) {
-        setFunctionType('link');
-        return;
-      }
-
-      const { data } = await supabase
-        .from("categories")
-        .select("function_type")
-        .eq("id", product.category_id)
-        .single();
-
-      const funcType = (data?.function_type as CategoryFunction) || 'link';
-      setFunctionType(funcType);
-
-      // Fetch stock count for account type products using secure function
-      if (funcType === 'account') {
+    if (funcType === 'account') {
+      const fetchStock = async () => {
         const { data: count } = await supabase
           .rpc('get_available_account_count', { p_product_id: product.id });
-        
         setStockCount(count || 0);
-      }
-    };
-    fetchData();
-  }, [product.category_id, product.id]);
+      };
+      fetchStock();
+    }
+    setFunctionType(funcType);
+  }, [funcType, product.id]);
 
   // Subscribe to real-time stock updates for account products
   useEffect(() => {
