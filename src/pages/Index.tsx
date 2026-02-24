@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { ProductGrid } from "@/components/ProductGrid";
 import { DecorativeSection } from "@/components/DecorativeSection";
 import { FestivalTheme, ColorMode, SnowEffect } from "@/components/FestivalThemeSwitcher";
-import { LoadingScreen } from "@/components/LoadingScreen";
+
 
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
@@ -353,8 +353,6 @@ const Index = () => {
 
   return (
     <>
-      {/* Loading Screen */}
-      <LoadingScreen isLoading={loading} />
       
       <div 
         className={`min-h-screen ${getThemeClass()} ${colorMode === 'light' ? 'light-mode' : ''}`}
