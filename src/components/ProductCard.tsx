@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ProductDetailDialog } from "./ProductDetailDialog";
 import { FavoriteButton } from "./FavoriteButton";
 import { AddToCartButton } from "./AddToCartButton";
@@ -67,6 +67,7 @@ export const ProductCard = ({ product, cardTheme, dialogTheme, categoryFunctionT
   const funcType = (categoryFunctionType as CategoryFunction) || 'link';
   const [functionType, setFunctionType] = useState<CategoryFunction | null>(funcType);
   const [stockCount, setStockCount] = useState<number | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Only fetch stock count for account type products
   useEffect(() => {
@@ -178,6 +179,12 @@ export const ProductCard = ({ product, cardTheme, dialogTheme, categoryFunctionT
         onClick={() => setDialogOpen(true)}
       >
         <div className="relative overflow-hidden rounded-md aspect-square mb-2 sm:mb-3 flex items-center justify-center bg-muted/20">
+          {/* Skeleton shimmer while image loads */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 bg-muted/30 animate-pulse rounded-md flex items-center justify-center">
+              <span className="text-3xl opacity-40">📷</span>
+            </div>
+          )}
           <img 
             src={product.image} 
             alt={product.name}
@@ -185,7 +192,8 @@ export const ProductCard = ({ product, cardTheme, dialogTheme, categoryFunctionT
             decoding="async"
             width={product.image_fit === "custom" && product.image_custom_width ? product.image_custom_width : 300}
             height={product.image_fit === "custom" && product.image_custom_height ? product.image_custom_height : 300}
-            className="transition-transform duration-500 group-hover:scale-110"
+            className={`transition-all duration-500 group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setImageLoaded(true)}
             style={{
               objectFit: product.image_fit === "custom" ? "contain" : (product.image_fit as any) || "cover",
               width: product.image_fit === "custom" && product.image_custom_width ? `${product.image_custom_width}px` : "100%",
