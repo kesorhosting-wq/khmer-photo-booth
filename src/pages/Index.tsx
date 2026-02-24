@@ -451,6 +451,7 @@ const Index = () => {
               products={filteredProducts} 
               onDeleteProduct={() => {}}
               categories={categories}
+              loading={loading}
               cardTheme={{
                 bgColor: settings.productCardBgColor,
                 bgImageUrl: settings.productCardBgImageUrl,
