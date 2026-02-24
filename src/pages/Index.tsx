@@ -195,9 +195,8 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    fetchProducts();
-    fetchSiteSettings();
-    fetchCategories();
+    // Fetch all data in parallel for faster loading
+    Promise.all([fetchProducts(), fetchSiteSettings(), fetchCategories()]);
   }, []);
 
   const fetchSiteSettings = async () => {
@@ -285,16 +284,15 @@ const Index = () => {
   };
 
   const fetchProducts = async () => {
-    // Fetch products
-    const { data: productsData, error: productsError } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false });
+    // Fetch products and categories in parallel
+    const [productsResult, productCatsResult] = await Promise.all([
+      supabase.from("products").select("*").order("created_at", { ascending: false }),
+      supabase.from("product_categories").select("product_id, category_id"),
+    ]);
 
-    // Fetch product categories
-    const { data: productCatsData } = await supabase
-      .from("product_categories")
-      .select("product_id, category_id");
+    const productsData = productsResult.data;
+    const productsError = productsResult.error;
+    const productCatsData = productCatsResult.data;
 
     if (productsError) {
       console.error("Error fetching products:", productsError);

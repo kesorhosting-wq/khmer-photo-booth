@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
@@ -8,7 +8,19 @@ interface Favorite {
   product_id: string;
 }
 
-export const useFavorites = () => {
+interface FavoritesContextType {
+  favorites: Favorite[];
+  loading: boolean;
+  addFavorite: (productId: string) => Promise<boolean>;
+  removeFavorite: (productId: string) => Promise<boolean>;
+  toggleFavorite: (productId: string) => Promise<boolean>;
+  isFavorite: (productId: string) => boolean;
+  refetch: () => Promise<void>;
+}
+
+const FavoritesContext = createContext<FavoritesContextType | null>(null);
+
+export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(false);
@@ -91,13 +103,34 @@ export const useFavorites = () => {
     return favorites.some((f) => f.product_id === productId);
   };
 
-  return {
-    favorites,
-    loading,
-    addFavorite,
-    removeFavorite,
-    toggleFavorite,
-    isFavorite,
-    refetch: fetchFavorites,
-  };
+  return (
+    <FavoritesContext.Provider value={{
+      favorites,
+      loading,
+      addFavorite,
+      removeFavorite,
+      toggleFavorite,
+      isFavorite,
+      refetch: fetchFavorites,
+    }}>
+      {children}
+    </FavoritesContext.Provider>
+  );
+};
+
+export const useFavorites = () => {
+  const context = useContext(FavoritesContext);
+  if (!context) {
+    // Fallback for components outside provider - return no-op version
+    return {
+      favorites: [] as Favorite[],
+      loading: false,
+      addFavorite: async () => false,
+      removeFavorite: async () => false,
+      toggleFavorite: async () => false,
+      isFavorite: () => false,
+      refetch: async () => {},
+    };
+  }
+  return context;
 };
