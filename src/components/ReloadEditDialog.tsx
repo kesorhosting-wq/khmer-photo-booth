@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { uploadImageToStorage } from "@/lib/uploadImage";
 import { RefreshCw, ImagePlus } from "lucide-react";
 import {
   Dialog,
@@ -64,17 +65,21 @@ export const ReloadEditDialog = () => {
     setLoading(false);
   };
 
-  const handleImageUpload = (
+  const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: (value: string | null) => void
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setter(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      const localUrl = URL.createObjectURL(file);
+      setter(localUrl);
+      try {
+        const storageUrl = await uploadImageToStorage(file, "site");
+        setter(storageUrl);
+      } catch (err: any) {
+        toast.error("Failed to upload image: " + (err.message || "Unknown error"));
+        setter(null);
+      }
     }
   };
 

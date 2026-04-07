@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { uploadImageToStorage } from "@/lib/uploadImage";
 import { Home, ImagePlus, Save } from "lucide-react";
 import {
   Dialog,
@@ -259,17 +260,22 @@ export const HomeEditDialog = () => {
     setLoading(false);
   };
 
-  const handleImageUpload = (
+  const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: (value: string | null) => void
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setter(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Show local preview instantly
+      const localUrl = URL.createObjectURL(file);
+      setter(localUrl);
+      try {
+        const storageUrl = await uploadImageToStorage(file, "site");
+        setter(storageUrl);
+      } catch (err: any) {
+        toast.error("Failed to upload image: " + (err.message || "Unknown error"));
+        setter(null);
+      }
     }
   };
 
