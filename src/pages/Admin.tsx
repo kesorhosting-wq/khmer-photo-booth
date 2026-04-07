@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadImageToStorage, isBase64 } from "@/lib/uploadImage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -171,14 +172,15 @@ const Admin = () => {
     setLoading(false);
   };
 
+  const pendingImageFile = useRef<File | null>(null);
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPreview(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      pendingImageFile.current = file;
+      // Show local preview instantly
+      const url = URL.createObjectURL(file);
+      setPreview(url);
     }
   };
 
@@ -193,12 +195,19 @@ const Admin = () => {
     try {
       const fullPrice = price ? `${price}${currency}` : null;
       
+      // Upload image to storage if it's a new file
+      let imageUrl = preview;
+      if (pendingImageFile.current) {
+        imageUrl = await uploadImageToStorage(pendingImageFile.current, "products");
+        pendingImageFile.current = null;
+      }
+      
       if (editingId) {
         const { error } = await supabase
           .from("products")
           .update({
             name,
-            image_url: preview,
+            image_url: imageUrl,
             price: fullPrice,
             description: description || null,
             category_id: categoryIds.length > 0 ? categoryIds[0] : null,
@@ -228,7 +237,7 @@ const Admin = () => {
           .from("products")
           .insert({
             name,
-            image_url: preview,
+            image_url: imageUrl,
             price: fullPrice,
             description: description || null,
             category_id: categoryIds.length > 0 ? categoryIds[0] : null,
