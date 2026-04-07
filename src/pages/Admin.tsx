@@ -28,6 +28,7 @@ import { PaymentGatewayConfigDialog } from "@/components/PaymentGatewayConfig";
 import { OrderStatsDashboard } from "@/components/OrderStatsDashboard";
 import { DatabaseExportImport } from "@/components/DatabaseExportImport";
 import { CouponManager } from "@/components/CouponManager";
+import { MigrateImagesButton } from "@/components/MigrateImagesButton";
 import khmerMandala from "@/assets/khmer-mandala.jpg";
 import type { CategoryFunction } from "@/types/shop";
 
