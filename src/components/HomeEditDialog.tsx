@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { uploadImageToStorage } from "@/lib/uploadImage";
 import { Home, ImagePlus, Save } from "lucide-react";
 import {
   Dialog,
@@ -259,17 +260,19 @@ export const HomeEditDialog = () => {
     setLoading(false);
   };
 
+  // Store pending files for upload on save
+  const pendingFiles = useRef<Map<string, File>>(new Map());
+
   const handleImageUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
-    setter: (value: string | null) => void
+    setter: (value: string | null) => void,
+    fileKey: string
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setter(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      pendingFiles.current.set(fileKey, file);
+      const url = URL.createObjectURL(file);
+      setter(url);
     }
   };
 

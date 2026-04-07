@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { uploadImageToStorage } from "@/lib/uploadImage";
 import { RefreshCw, ImagePlus } from "lucide-react";
 import {
   Dialog,
@@ -64,17 +65,18 @@ export const ReloadEditDialog = () => {
     setLoading(false);
   };
 
+  const pendingFiles = useRef<Map<string, File>>(new Map());
+
   const handleImageUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
-    setter: (value: string | null) => void
+    setter: (value: string | null) => void,
+    fileKey: string
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setter(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      pendingFiles.current.set(fileKey, file);
+      const url = URL.createObjectURL(file);
+      setter(url);
     }
   };
 
