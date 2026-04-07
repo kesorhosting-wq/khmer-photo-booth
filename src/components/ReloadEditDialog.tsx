@@ -65,18 +65,21 @@ export const ReloadEditDialog = () => {
     setLoading(false);
   };
 
-  const pendingFiles = useRef<Map<string, File>>(new Map());
-
-  const handleImageUpload = (
+  const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    setter: (value: string | null) => void,
-    fileKey: string
+    setter: (value: string | null) => void
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      pendingFiles.current.set(fileKey, file);
-      const url = URL.createObjectURL(file);
-      setter(url);
+      const localUrl = URL.createObjectURL(file);
+      setter(localUrl);
+      try {
+        const storageUrl = await uploadImageToStorage(file, "site");
+        setter(storageUrl);
+      } catch (err: any) {
+        toast.error("Failed to upload image: " + (err.message || "Unknown error"));
+        setter(null);
+      }
     }
   };
 
