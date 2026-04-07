@@ -465,6 +465,27 @@ const Admin = () => {
             <PaymentGatewayConfigDialog />
             <DatabaseExportImport />
             <CouponManager />
+            <Button
+              variant="outline"
+              className="border-gold/30 text-foreground hover:bg-gold/10 font-display gap-2"
+              onClick={async () => {
+                toast.info("Migrating base64 images to CDN... This may take a minute.");
+                try {
+                  const { data, error } = await supabase.functions.invoke("migrate-images");
+                  if (error) throw error;
+                  if (data?.success) {
+                    toast.success(`Migration done! Products: ${data.migrated.products}, Settings: ${data.migrated.siteSettings}${data.errors.length > 0 ? `. ${data.errors.length} errors.` : ""}`);
+                    fetchProducts();
+                  } else {
+                    toast.error(data?.error || "Migration failed");
+                  }
+                } catch (e: any) {
+                  toast.error("Migration failed: " + (e.message || "Unknown error"));
+                }
+              }}
+            >
+              🔄 Migrate Images to CDN
+            </Button>
             <Dialog open={open} onOpenChange={(isOpen) => { setOpen(isOpen); if (!isOpen) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="bg-gold text-primary-foreground hover:bg-gold-dark font-display gap-2">
